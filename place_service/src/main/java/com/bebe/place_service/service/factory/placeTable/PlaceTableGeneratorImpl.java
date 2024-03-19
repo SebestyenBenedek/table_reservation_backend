@@ -1,4 +1,4 @@
-package com.bebe.place_service.service.factory.placeTable.generator;
+package com.bebe.place_service.service.factory.placeTable;
 
 import com.bebe.place_service.model.Place;
 import com.bebe.place_service.model.PlaceTable;

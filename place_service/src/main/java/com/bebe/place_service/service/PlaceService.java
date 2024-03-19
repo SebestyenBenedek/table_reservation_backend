@@ -8,8 +8,8 @@ import com.bebe.place_service.model.PlaceTable;
 import com.bebe.place_service.model.TimeInterval;
 import com.bebe.place_service.repository.PlaceRepository;
 import com.bebe.place_service.service.builder.PlaceBuilder;
-import com.bebe.place_service.service.factory.placeTable.generator.PlaceTableGeneratorImpl;
-import com.bebe.place_service.service.factory.timeInterval.generator.HalfHourIntervalGenerator;
+import com.bebe.place_service.service.factory.placeTable.PlaceTableGeneratorImpl;
+import com.bebe.place_service.service.factory.timeInterval.HalfHourIntervalGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

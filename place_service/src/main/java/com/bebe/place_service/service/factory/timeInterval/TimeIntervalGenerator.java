@@ -1,4 +1,4 @@
-package com.bebe.place_service.service.factory.timeInterval.generator;
+package com.bebe.place_service.service.factory.timeInterval;
 
 
 import com.bebe.place_service.model.TimeInterval;
