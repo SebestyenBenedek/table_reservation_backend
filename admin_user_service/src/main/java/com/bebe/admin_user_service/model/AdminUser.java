@@ -1,4 +1,4 @@
-package com.bebe.place_service.model.user;
+package com.bebe.admin_user_service.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public abstract class User {
+public class AdminUser {
     @Id
     @GeneratedValue
     private Long id;
