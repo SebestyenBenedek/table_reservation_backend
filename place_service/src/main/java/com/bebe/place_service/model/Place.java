@@ -4,6 +4,7 @@ import com.bebe.place_service.model.reservation.Reservation;
 import com.bebe.place_service.model.user.AdminUser;
 import com.bebe.place_service.model.user.GuestUser;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,7 +20,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class Place {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     private Long id;
 
     @NonNull

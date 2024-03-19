@@ -7,7 +7,6 @@ import lombok.Getter;
 import java.util.List;
 import java.util.Set;
 
-@Getter
 public record NewPlaceDTO(String name,
                           String address,
                           String description,

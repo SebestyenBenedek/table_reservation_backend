@@ -21,7 +21,7 @@ public class PlaceBuilder {
 
     public Place placeBuilder(NewPlaceDTO newPlaceDTO, Set<TimeInterval> timeIntervals) {
         Place place = Place.builder()
-                .name(newPlaceDTO.getName())
+                .name(newPlaceDTO.name())
                 .address(newPlaceDTO.address())
                 .description(newPlaceDTO.description())
                 .menu(newPlaceDTO.menu())

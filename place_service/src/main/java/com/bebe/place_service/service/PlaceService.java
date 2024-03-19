@@ -51,18 +51,18 @@ public class PlaceService {
     public Place addPlace(NewPlaceDTO placeDto) {
         Set<TimeInterval> timeIntervals = createTimeIntervals(placeDto);
         Place newPlace = placeBuilder.placeBuilder(placeDto, timeIntervals);
-        Set<PlaceTable> tables = placeTableGenerator.generatePlaceTable(placeDto.getNumberOfTables(), newPlace, timeIntervals);
+        Set<PlaceTable> tables = placeTableGenerator.generatePlaceTable(placeDto.numberOfTables(), newPlace, timeIntervals);
         newPlace.setTables(tables);
 
         return placeRepository.save(newPlace);
     }
 
     private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto) {
-        Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.getTimeIntervalForWeek().getTimeIntervalForDayDTOSet();
+        Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.timeIntervalForWeek().timeIntervalForDayDTOSet();
         Set<TimeInterval> timeIntervals = new HashSet<>();
 
         for (TimeIntervalForDayDTO openHoursPerDay : openHoursPerDays) {
-            timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDay.getDay(), openHoursPerDay.getOpeningHour(), openHoursPerDay.getClosingHour()));
+            timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDay.day(), openHoursPerDay.openingHour(), openHoursPerDay.closingHour()));
         }
         return timeIntervals;
     }

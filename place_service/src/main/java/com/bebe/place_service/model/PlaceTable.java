@@ -1,6 +1,7 @@
 package com.bebe.place_service.model;
 
 import com.bebe.place_service.model.reservation.Reservation;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,13 +14,13 @@ import java.util.Set;
 @Setter
 public class PlaceTable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @GeneratedValue
+    private Long id;
 
     @ManyToOne
     private Place place;
 
-    @OneToMany(mappedBy = "placeTable")
+    @ManyToMany(mappedBy = "placeTables")
     private Set<TimeInterval> timeIntervals;
 
     @Override
@@ -27,7 +28,7 @@ public class PlaceTable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PlaceTable that = (PlaceTable) o;
-        return id == that.id && Objects.equals(place, that.place) && Objects.equals(timeIntervals, that.timeIntervals);
+        return Objects.equals(id, that.id) && Objects.equals(place, that.place) && Objects.equals(timeIntervals, that.timeIntervals);
     }
 
     @Override

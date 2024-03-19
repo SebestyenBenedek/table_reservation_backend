@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 public abstract class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     private Long id;
 
     @NonNull
