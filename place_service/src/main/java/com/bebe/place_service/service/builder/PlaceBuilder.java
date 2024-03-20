@@ -28,7 +28,7 @@ public class PlaceBuilder {
                 .characteristics(newPlaceDTO.characteristics())
                 .images(newPlaceDTO.images())
                 .tables(new HashSet<>())
-                .owner(newPlaceDTO.owner())
+                .adminUserId(newPlaceDTO.ownerId())
                 .timeIntervals(timeIntervals)
                 .build();
         placeRepository.save(place);

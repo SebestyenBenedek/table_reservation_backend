@@ -3,8 +3,6 @@ package com.bebe.place_service.dto;
 import com.bebe.place_service.model.Characteristic;
 import com.bebe.place_service.model.PlaceTable;
 import com.bebe.place_service.model.TimeInterval;
-import com.bebe.place_service.model.reservation.Reservation;
-import com.bebe.place_service.model.user.AdminUser;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -22,7 +20,7 @@ public record PlaceDTO(String name,
                        String menu,
                        List<Characteristic> characteristics,
                        Set<String> images,
-                       AdminUser owner,
+                       Long ownerId,
                        Set<PlaceTable> tables,
-                       Set<Reservation> reservations) {
+                       Set<Long> reservationIds) {
 }

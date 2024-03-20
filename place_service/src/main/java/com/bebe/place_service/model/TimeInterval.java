@@ -1,6 +1,5 @@
 package com.bebe.place_service.model;
 
-import com.bebe.place_service.model.reservation.Reservation;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,19 +41,16 @@ public class TimeInterval {
     @ManyToOne
     private Place place;
 
-    @ManyToOne
-    private Reservation reservation;
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TimeInterval that = (TimeInterval) o;
-        return isReserved == that.isReserved && Objects.equals(id, that.id) && Objects.equals(placeTables, that.placeTables) && Objects.equals(date, that.date) && day == that.day && Objects.equals(timeStampFrom, that.timeStampFrom) && Objects.equals(timeStampTo, that.timeStampTo) && Objects.equals(place, that.place) && Objects.equals(reservation, that.reservation);
+        return isReserved == that.isReserved && Objects.equals(id, that.id) && Objects.equals(placeTables, that.placeTables) && Objects.equals(date, that.date) && day == that.day && Objects.equals(timeStampFrom, that.timeStampFrom) && Objects.equals(timeStampTo, that.timeStampTo) && Objects.equals(place, that.place);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, placeTables, date, day, timeStampFrom, timeStampTo, isReserved, place, reservation);
+        return Objects.hash(id, placeTables, date, day, timeStampFrom, timeStampTo, isReserved, place);
     }
 }
