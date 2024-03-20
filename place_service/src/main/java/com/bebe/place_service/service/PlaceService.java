@@ -80,8 +80,8 @@ public class PlaceService {
         updateIfNotEmpty(placeDB::setCharacteristics, place.characteristics());
         updateIfNotEmpty(placeDB::setImages, place.images());
         updateIfNotEmpty(placeDB::setTables, place.tables());
-        updateIfNotNull(placeDB::setOwner, place.owner());
-        updateIfNotEmpty(placeDB::setReservations, place.reservations());
+        updateIfNotNull(placeDB::setAdminUserId, place.ownerId());
+        updateIfNotEmpty(placeDB::setReservationIds, place.reservationIds());
 
         return placeRepository.save(placeDB);
     }

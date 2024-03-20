@@ -1,7 +1,6 @@
 package com.bebe.place_service.dto;
 
 import com.bebe.place_service.model.Characteristic;
-import com.bebe.place_service.model.user.AdminUser;
 import lombok.Getter;
 
 import java.util.List;
@@ -14,6 +13,6 @@ public record NewPlaceDTO(String name,
                           List<Characteristic> characteristics,
                           Set<String> images,
                           int numberOfTables,
-                          AdminUser owner,
+                          Long ownerId,
                           TimeIntervalForWeekDTO timeIntervalForWeek) {
 }

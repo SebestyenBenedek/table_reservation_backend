@@ -1,7 +1,5 @@
 package com.bebe.place_service.model;
 
-import com.bebe.place_service.model.reservation.Reservation;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

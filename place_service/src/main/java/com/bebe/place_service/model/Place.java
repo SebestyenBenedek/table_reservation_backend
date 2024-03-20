@@ -1,7 +1,5 @@
 package com.bebe.place_service.model;
 
-import com.bebe.place_service.model.reservation.Reservation;
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -50,19 +48,19 @@ public class Place {
     @OneToMany(mappedBy = "place", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<PlaceTable> tables;
 
-    @OneToMany(mappedBy = "place")
-    private Set<Reservation> reservations;
+    @ElementCollection
+    private Set<Long> reservationIds;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Place place = (Place) o;
-        return Double.compare(rating, place.rating) == 0 && price == place.price && Objects.equals(id, place.id) && Objects.equals(name, place.name) && Objects.equals(address, place.address) && Objects.equals(timeIntervals, place.timeIntervals) && Objects.equals(description, place.description) && Objects.equals(menu, place.menu) && Objects.equals(characteristics, place.characteristics) && Objects.equals(images, place.images) && Objects.equals(adminUserId, place.adminUserId) && Objects.equals(tables, place.tables) && Objects.equals(reservations, place.reservations);
+        return Double.compare(rating, place.rating) == 0 && price == place.price && Objects.equals(id, place.id) && Objects.equals(name, place.name) && Objects.equals(address, place.address) && Objects.equals(timeIntervals, place.timeIntervals) && Objects.equals(description, place.description) && Objects.equals(menu, place.menu) && Objects.equals(characteristics, place.characteristics) && Objects.equals(images, place.images) && Objects.equals(adminUserId, place.adminUserId) && Objects.equals(tables, place.tables) && Objects.equals(reservationIds, place.reservationIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, address, timeIntervals, rating, price, description, menu, characteristics, images, adminUserId, tables, reservations);
+        return Objects.hash(id, name, address, timeIntervals, rating, price, description, menu, characteristics, images, adminUserId, tables, reservationIds);
     }
 }
