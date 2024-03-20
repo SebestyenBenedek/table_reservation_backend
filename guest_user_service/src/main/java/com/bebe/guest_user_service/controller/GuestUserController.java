@@ -3,6 +3,7 @@ package com.bebe.guest_user_service.controller;
 import com.bebe.guest_user_service.model.GuestUser;
 import com.bebe.guest_user_service.service.GuestUserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,11 @@ public class GuestUserController {
     @Autowired
     public GuestUserController(GuestUserService guestUserService) {
         this.guestUserService = guestUserService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<GuestUser> getUserById(@PathVariable("id") Long userId) {
+        return ResponseEntity.ok(guestUserService.getUserById(userId));
     }
 
     @PostMapping("/")

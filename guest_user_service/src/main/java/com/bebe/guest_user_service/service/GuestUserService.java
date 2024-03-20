@@ -18,6 +18,13 @@ public class GuestUserService {
         this.guestUserRepository = guestUserRepository;
     }
 
+    public GuestUser getUserById(Long userId) {
+        if (guestUserRepository.findGuestUserBy(userId) == null) {
+            throw new NoSuchElementException("The place doesn't exist!");
+        }
+        return guestUserRepository.findGuestUserBy(userId);
+    }
+
     public GuestUser saveUser(GuestUser user) {
         return guestUserRepository.save(user);
     }

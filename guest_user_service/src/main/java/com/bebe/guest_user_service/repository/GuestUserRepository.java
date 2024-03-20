@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GuestUserRepository extends JpaRepository<GuestUser, Long> {
+    GuestUser findGuestUserBy(Long placeId);
 }
