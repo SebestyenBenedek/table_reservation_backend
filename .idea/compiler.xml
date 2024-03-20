@@ -9,6 +9,8 @@
         <outputRelativeToContentRoot value="true" />
         <module name="eureka_server" />
         <module name="place_service" />
+        <module name="admin_user_service" />
+        <module name="guest_user_service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -19,7 +21,9 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="admin_user_service" options="-parameters" />
       <module name="eureka_server" options="-parameters" />
+      <module name="guest_user_service" options="-parameters" />
       <module name="place_service" options="-parameters" />
       <module name="place_service (1)" options="-parameters" />
       <module name="place_service (2)" options="-parameters" />
