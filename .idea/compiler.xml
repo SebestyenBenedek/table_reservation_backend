@@ -11,6 +11,7 @@
         <module name="place_service" />
         <module name="admin_user_service" />
         <module name="guest_user_service" />
+        <module name="api_gateway" />
         <module name="reservation_service" />
       </profile>
     </annotationProcessing>
@@ -22,7 +23,8 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="admin_user_service" options="" />
+      <module name="admin_user_service" options="-parameters" />
+      <module name="api_gateway" options="-parameters" />
       <module name="eureka_server" options="-parameters" />
       <module name="guest_user_service" options="-parameters" />
       <module name="place_service" options="-parameters" />
