@@ -2,9 +2,12 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/admin_user_service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/admin_user_service/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/eureka_server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/guest_user_service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/guest_user_service/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/place_service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/reservation_service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
   </component>

@@ -11,6 +11,7 @@
         <module name="place_service" />
         <module name="admin_user_service" />
         <module name="guest_user_service" />
+        <module name="reservation_service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -21,12 +22,13 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="admin_user_service" options="-parameters" />
+      <module name="admin_user_service" options="" />
       <module name="eureka_server" options="-parameters" />
       <module name="guest_user_service" options="-parameters" />
       <module name="place_service" options="-parameters" />
       <module name="place_service (1)" options="-parameters" />
       <module name="place_service (2)" options="-parameters" />
+      <module name="reservation_service" options="-parameters" />
     </option>
   </component>
 </project>
