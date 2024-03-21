@@ -17,10 +17,10 @@ public class AdminUserService {
     }
 
     public AdminUser getAdminById(Long adminId) {
-        if (adminUserRepository.findAdminUserBy(adminId) == null) {
+        if (adminUserRepository.findAdminUserById(adminId) == null) {
             throw new NoSuchElementException("No such admin!");
         }
-        return adminUserRepository.findAdminUserBy(adminId);
+        return adminUserRepository.findAdminUserById(adminId);
     }
 
     public AdminUser saveAdmin(AdminUser admin) {
