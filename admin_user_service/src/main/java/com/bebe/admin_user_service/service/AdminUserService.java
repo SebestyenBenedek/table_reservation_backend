@@ -16,11 +16,18 @@ public class AdminUserService {
         this.adminUserRepository = adminUserRepository;
     }
 
-    public AdminUser saveUser(AdminUser admin) {
+    public AdminUser getAdminById(Long adminId) {
+        if (adminUserRepository.findAdminUserBy(adminId) == null) {
+            throw new NoSuchElementException("No such admin!");
+        }
+        return adminUserRepository.findAdminUserBy(adminId);
+    }
+
+    public AdminUser saveAdmin(AdminUser admin) {
         return adminUserRepository.save(admin);
     }
 
-    public AdminUser updateUser(AdminUser admin, Long adminId) {
+    public AdminUser updateAdmin(AdminUser admin, Long adminId) {
         AdminUser userToUpdate = adminUserRepository.findById(adminId)
                 .orElseThrow(() -> new NoSuchElementException("AdminUser not found with ID: " + adminId));
 
@@ -34,7 +41,7 @@ public class AdminUserService {
         return adminUserRepository.save(userToUpdate);
     }
 
-    public void deleteUserById(Long adminId) {
+    public void deleteAdminById(Long adminId) {
         adminUserRepository.deleteById(adminId);
     }
 }

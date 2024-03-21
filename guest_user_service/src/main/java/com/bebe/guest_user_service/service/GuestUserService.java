@@ -19,10 +19,10 @@ public class GuestUserService {
     }
 
     public GuestUser getUserById(Long userId) {
-        if (guestUserRepository.findGuestUserBy(userId) == null) {
-            throw new NoSuchElementException("The place doesn't exist!");
+        if (guestUserRepository.findGuestUserById(userId) == null) {
+            throw new NoSuchElementException("No such user!");
         }
-        return guestUserRepository.findGuestUserBy(userId);
+        return guestUserRepository.findGuestUserById(userId);
     }
 
     public GuestUser saveUser(GuestUser user) {

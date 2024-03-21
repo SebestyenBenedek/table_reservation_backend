@@ -15,7 +15,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class Place {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NonNull
