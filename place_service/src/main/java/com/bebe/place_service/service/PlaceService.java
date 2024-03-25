@@ -7,6 +7,8 @@ import com.bebe.place_service.model.Place;
 import com.bebe.place_service.model.PlaceTable;
 import com.bebe.place_service.model.TimeInterval;
 import com.bebe.place_service.repository.PlaceRepository;
+import com.bebe.place_service.repository.PlaceTableRepository;
+import com.bebe.place_service.repository.TimeIntervalRepository;
 import com.bebe.place_service.service.builder.PlaceBuilder;
 import com.bebe.place_service.service.factory.placeTable.PlaceTableGeneratorImpl;
 import com.bebe.place_service.service.factory.timeInterval.HalfHourIntervalGenerator;
@@ -25,13 +27,17 @@ public class PlaceService {
     private static final int MIN_AVERAGE_PRICE = 0;
     private static final int MAX_AVERAGE_PRICE = 3;
     private final PlaceRepository placeRepository;
+    private final PlaceTableRepository placeTableRepository;
+    private final TimeIntervalRepository timeIntervalRepository;
     private final HalfHourIntervalGenerator timeIntervalGenerator;
     private final PlaceTableGeneratorImpl placeTableGenerator;
     private final PlaceBuilder placeBuilder;
 
     @Autowired
-    public PlaceService(PlaceRepository placeRepository, HalfHourIntervalGenerator timeIntervalGenerator, PlaceTableGeneratorImpl placeTableGenerator, PlaceBuilder placeBuilder) {
+    public PlaceService(PlaceRepository placeRepository, PlaceTableRepository placeTableRepository, TimeIntervalRepository timeIntervalRepository, HalfHourIntervalGenerator timeIntervalGenerator, PlaceTableGeneratorImpl placeTableGenerator, PlaceBuilder placeBuilder) {
         this.placeRepository = placeRepository;
+        this.placeTableRepository = placeTableRepository;
+        this.timeIntervalRepository = timeIntervalRepository;
         this.timeIntervalGenerator = timeIntervalGenerator;
         this.placeTableGenerator = placeTableGenerator;
         this.placeBuilder = placeBuilder;
@@ -48,23 +54,39 @@ public class PlaceService {
         return placeRepository.findPlaceById(placeId);
     }
 
-    public Place addPlace(NewPlaceDTO placeDto) {
-        Set<TimeInterval> timeIntervals = createTimeIntervals(placeDto);
-        Place newPlace = placeBuilder.placeBuilder(placeDto, timeIntervals);
-        Set<PlaceTable> tables = placeTableGenerator.generatePlaceTable(placeDto.numberOfTables(), newPlace, timeIntervals);
+    public void addPlace(NewPlaceDTO placeDto) {
+        Place newPlace = placeBuilder.placeBuilder(placeDto);
+        System.out.println(newPlace);
+
+        newPlace = placeRepository.save(newPlace);
+
+        Set<PlaceTable> tables = placeTableGenerator.generatePlaceTable(placeDto.numberOfTables(), newPlace);
+        tables = new HashSet<>(placeTableRepository.saveAll(tables));
+
+        Set<TimeInterval> timeIntervals = createTimeIntervals(placeDto, tables);
+        timeIntervalRepository.saveAll(timeIntervals);
         newPlace.setTables(tables);
 
-        return placeRepository.save(newPlace);
+        placeRepository.save(newPlace);
     }
 
-    private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto) {
+    private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto, Set<PlaceTable> tables) {
         Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.timeIntervalForWeek().timeIntervalForDayDTOSet();
         Set<TimeInterval> timeIntervals = new HashSet<>();
 
-        for (TimeIntervalForDayDTO openHoursPerDay : openHoursPerDays) {
-            timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDay.day(), openHoursPerDay.openingHour(), openHoursPerDay.closingHour()));
+        for (PlaceTable table : tables) {
+            for (TimeIntervalForDayDTO openHoursPerDay : openHoursPerDays) {
+                timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDay.day(), openHoursPerDay.openingHour(), openHoursPerDay.closingHour(), table));
+            }
         }
+        setTimeIntervalsForTables(tables, timeIntervals);
         return timeIntervals;
+    }
+
+    private void setTimeIntervalsForTables(Set<PlaceTable> tables, Set<TimeInterval> timeIntervals) {
+        for (PlaceTable table : tables) {
+            table.setTimeIntervals(timeIntervals);
+        }
     }
 
     public Place updatePlace(PlaceDTO place, Long placeId) {
