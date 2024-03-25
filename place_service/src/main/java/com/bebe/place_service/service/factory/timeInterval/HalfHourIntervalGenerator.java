@@ -1,6 +1,7 @@
 package com.bebe.place_service.service.factory.timeInterval;
 
 
+import com.bebe.place_service.model.PlaceTable;
 import com.bebe.place_service.model.TimeInterval;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ public class HalfHourIntervalGenerator implements TimeIntervalGenerator {
     private static final int HALF_HOUR_IN_MINUTES = 30;
 
     @Override
-    public Set<TimeInterval> generateTimeInterval(DayOfWeek day, LocalTime openingHour, LocalTime closingHour) {
+    public Set<TimeInterval> generateTimeInterval(DayOfWeek day, LocalTime openingHour, LocalTime closingHour, PlaceTable table) {
         Set<TimeInterval> newTimeIntervals = new HashSet<>();
 
         LocalTime currentTime = openingHour;
@@ -23,6 +24,7 @@ public class HalfHourIntervalGenerator implements TimeIntervalGenerator {
             timeInterval.setDay(day);
             timeInterval.setTimeStampFrom(currentTime);
             timeInterval.setTimeStampTo(currentTime.plusMinutes(HALF_HOUR_IN_MINUTES));
+            timeInterval.setPlaceTable(table);
             newTimeIntervals.add(timeInterval);
 
             currentTime = currentTime.plusMinutes(HALF_HOUR_IN_MINUTES);
