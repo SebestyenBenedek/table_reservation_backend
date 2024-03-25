@@ -5,5 +5,6 @@ public enum Languages {
     HUNGARIAN,
     GERMAN,
     FRENCH,
-    RUSSIAN
+    RUSSIAN,
+    SPANISH
 }
