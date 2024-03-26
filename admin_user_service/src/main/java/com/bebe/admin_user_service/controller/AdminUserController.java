@@ -35,5 +35,7 @@ public class AdminUserController {
     @DeleteMapping("/{id}")
     public void deleteAdminUserById(@PathVariable("id") Long adminId) {
         adminUserService.deleteAdminById(adminId);
+
+        System.out.println("Deleted successfully");
     }
 }

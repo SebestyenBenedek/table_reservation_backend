@@ -24,7 +24,7 @@ public class PlaceController {
 
     @GetMapping("/")
     public Set<Place> fetchPlaceList() {
-        return placeService.getAllPLaces();
+        return placeService.getAllPlaces();
     }
 
     @GetMapping("/{id}")

@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 public class AdminUser {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NonNull
@@ -29,5 +29,5 @@ public class AdminUser {
 
     private String profilePictureUrl;
 
-    private String language;
+    private Languages language;
 }

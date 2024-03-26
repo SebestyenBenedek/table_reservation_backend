@@ -1,5 +1,6 @@
 package com.bebe.place_service.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,16 +18,13 @@ import java.util.Set;
 @NoArgsConstructor
 public class TimeInterval {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany
-    @JoinTable(
-            name = "time_interval_table",
-            joinColumns = @JoinColumn(name = "time_interval_id"),
-            inverseJoinColumns = @JoinColumn(name = "place_table_id")
-    )
-    private Set<PlaceTable> placeTables;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "place_table_id", nullable = false)
+    @JsonBackReference
+    private PlaceTable placeTable;
 
     private LocalDate date;
 
@@ -38,19 +36,35 @@ public class TimeInterval {
 
     private boolean isReserved;
 
-    @ManyToOne
-    private Place place;
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TimeInterval that = (TimeInterval) o;
-        return isReserved == that.isReserved && Objects.equals(id, that.id) && Objects.equals(placeTables, that.placeTables) && Objects.equals(date, that.date) && day == that.day && Objects.equals(timeStampFrom, that.timeStampFrom) && Objects.equals(timeStampTo, that.timeStampTo) && Objects.equals(place, that.place);
+        return isReserved == that.isReserved &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(placeTable, that.placeTable) &&
+                Objects.equals(date, that.date) &&
+                day == that.day &&
+                Objects.equals(timeStampFrom, that.timeStampFrom) &&
+                Objects.equals(timeStampTo, that.timeStampTo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, placeTables, date, day, timeStampFrom, timeStampTo, isReserved, place);
+        return Objects.hash(id, placeTable, date, day, timeStampFrom, timeStampTo, isReserved);
+    }
+
+    @Override
+    public String toString() {
+        return "TimeInterval{" +
+                "id=" + id +
+                ", placeTables=" + (placeTable != null ? placeTable.getId() : null) +
+                ", date=" + date +
+                ", day=" + day +
+                ", timeStampFrom=" + timeStampFrom +
+                ", timeStampTo=" + timeStampTo +
+                ", isReserved=" + isReserved +
+                '}';
     }
 }
