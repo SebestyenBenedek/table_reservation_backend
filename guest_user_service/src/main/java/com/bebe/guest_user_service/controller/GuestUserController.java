@@ -35,5 +35,7 @@ public class GuestUserController {
     @DeleteMapping("/{id}")
     public void deleteUserById(@PathVariable("id") Long userId) {
         guestUserService.deleteUserById(userId);
+
+        System.out.println("Deleted successfully");
     }
 }
