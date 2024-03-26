@@ -33,8 +33,8 @@ public class PlaceController {
     }
 
     @PostMapping("/")
-    public void savePlace(@RequestBody NewPlaceDTO place) {
-        placeService.addPlace(place);
+    public Place savePlace(@RequestBody NewPlaceDTO place) {
+        return placeService.addPlace(place);
     }
 
     @PutMapping("/{id}")

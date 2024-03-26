@@ -52,7 +52,7 @@ public class PlaceService {
                 .orElseThrow(() -> new NoSuchElementException("The place doesn't exist!"));
     }
 
-    public void addPlace(NewPlaceDTO placeDto) {
+    public Place addPlace(NewPlaceDTO placeDto) {
         Place newPlace = placeBuilder.placeBuilder(placeDto);
         newPlace = placeRepository.save(newPlace);
 
@@ -63,7 +63,7 @@ public class PlaceService {
         timeIntervalRepository.saveAll(timeIntervals);
         newPlace.setTables(tables);
 
-        placeRepository.save(newPlace);
+        return placeRepository.save(newPlace);
     }
 
     private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto, Set<PlaceTable> tables) {
@@ -86,25 +86,26 @@ public class PlaceService {
     }
 
     public Place updatePlace(PlaceDTO place, Long placeId) {
-        Place placeDB = placeRepository.findById(placeId)
+        Place placeToUpdate = placeRepository.findById(placeId)
                 .orElseThrow(() -> new NoSuchElementException("Place not found with ID: " + placeId));
 
-        updateIfNotEmpty(placeDB::setName, place.name());
-        updateIfNotEmpty(placeDB::setAddress, place.address());
-        updateIfInRange(placeDB::setRating, place.rating(), MIN_RATING, MAX_RATING, "Invalid rating value");
-        updateIfInRange(placeDB::setPrice, place.price(), MIN_AVERAGE_PRICE, MAX_AVERAGE_PRICE, "Invalid price value");
-        updateIfNotEmpty(placeDB::setDescription, place.description());
-        updateIfNotEmpty(placeDB::setMenu, place.menu());
-        updateIfNotEmpty(placeDB::setCharacteristics, place.characteristics());
-        updateIfNotEmpty(placeDB::setImages, place.images());
-        updateIfNotEmpty(placeDB::setTables, place.tables());
-        updateIfNotNull(placeDB::setAdminUserId, place.ownerId());
-        updateIfNotEmpty(placeDB::setReservationIds, place.reservationIds());
+        updateIfNotEmpty(placeToUpdate::setName, place.name());
+        updateIfNotEmpty(placeToUpdate::setAddress, place.address());
+        updateIfInRange(placeToUpdate::setRating, place.rating(), MIN_RATING, MAX_RATING, "Invalid rating value");
+        updateIfInRange(placeToUpdate::setPrice, place.price(), MIN_AVERAGE_PRICE, MAX_AVERAGE_PRICE, "Invalid price value");
+        updateIfNotEmpty(placeToUpdate::setDescription, place.description());
+        updateIfNotEmpty(placeToUpdate::setMenu, place.menu());
+        updateIfNotEmpty(placeToUpdate::setCharacteristics, place.characteristics());
+        updateIfNotEmpty(placeToUpdate::setImages, place.images());
+        updateIfNotEmpty(placeToUpdate::setTables, place.tables());
+        updateIfNotNull(placeToUpdate::setAdminUserId, place.ownerId());
+        updateIfNotEmpty(placeToUpdate::setReservationIds, place.reservationIds());
 
-        return placeRepository.save(placeDB);
+        return placeRepository.save(placeToUpdate);
     }
 
     public void deletePlaceById(Long placeId) {
+        System.out.println("Deleted successfully");
         placeRepository.deleteById(placeId);
     }
 
