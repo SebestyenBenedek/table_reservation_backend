@@ -43,21 +43,17 @@ public class PlaceService {
         this.placeBuilder = placeBuilder;
     }
 
-    public Set<Place> getAllPLaces() {
+    public Set<Place> getAllPlaces() {
         return new HashSet<>(placeRepository.findAll());
     }
 
     public Place getPlaceById(Long placeId) {
-        if (placeRepository.findPlaceById(placeId) == null) {
-            throw new NoSuchElementException("The place doesn't exist!");
-        }
-        return placeRepository.findPlaceById(placeId);
+        return placeRepository.findById(placeId)
+                .orElseThrow(() -> new NoSuchElementException("The place doesn't exist!"));
     }
 
     public void addPlace(NewPlaceDTO placeDto) {
         Place newPlace = placeBuilder.placeBuilder(placeDto);
-        System.out.println(newPlace);
-
         newPlace = placeRepository.save(newPlace);
 
         Set<PlaceTable> tables = placeTableGenerator.generatePlaceTable(placeDto.numberOfTables(), newPlace);
