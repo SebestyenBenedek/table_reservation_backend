@@ -1,5 +1,6 @@
 package com.bebe.place_service.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,6 +47,7 @@ public class Place {
 
     @OneToMany(mappedBy = "place", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Column(name = "tables")
+    @JsonManagedReference
     private Set<PlaceTable> tables;
 
     @ElementCollection

@@ -1,5 +1,6 @@
 package com.bebe.place_service.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ public class TimeInterval {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "place_table_id", nullable = false)
+    @JsonBackReference
     private PlaceTable placeTable;
 
     private LocalDate date;

@@ -1,5 +1,7 @@
 package com.bebe.place_service.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,10 +21,12 @@ public class PlaceTable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "place_id", nullable = false)
+    @JsonBackReference
     private Place place;
 
     @OneToMany(mappedBy = "placeTable", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @Column(name = "time_intervals")
+    @JsonManagedReference
     private Set<TimeInterval> timeIntervals;
 
     @Override
