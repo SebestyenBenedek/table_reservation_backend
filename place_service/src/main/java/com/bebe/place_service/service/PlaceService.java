@@ -15,6 +15,7 @@ import com.bebe.place_service.service.factory.timeInterval.HalfHourIntervalGener
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -67,14 +68,14 @@ public class PlaceService {
     }
 
     private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto, Set<PlaceTable> tables) {
+        LocalDate currentDate = LocalDate.now();
         Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.timeIntervalForWeek().timeIntervalForDayDTOSet();
         Set<TimeInterval> timeIntervals = new HashSet<>();
 
         for (PlaceTable table : tables) {
-            for (TimeIntervalForDayDTO openHoursPerDay : openHoursPerDays) {
-                timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDay.day(), openHoursPerDay.openingHour(), openHoursPerDay.closingHour(), table));
-            }
+                timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDays, currentDate, table));
         }
+
         setTimeIntervalsForTables(tables, timeIntervals);
         return timeIntervals;
     }
@@ -107,6 +108,24 @@ public class PlaceService {
     public void deletePlaceById(Long placeId) {
         System.out.println("Deleted successfully");
         placeRepository.deleteById(placeId);
+    }
+
+    public void reserveTimeIntervals(Long placeId, Long tableId, Set<Long> reservedTimeIntervalIds) {
+        Place place = placeRepository.findById(placeId)
+                .orElseThrow(() -> new NoSuchElementException("Place not found with ID: " + placeId));
+
+        PlaceTable tableToUpdate = place.getTables().stream()
+                .filter(table -> table.getId().equals(tableId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Table not found with ID: " + tableId));
+
+        tableToUpdate.getTimeIntervals().forEach(timeInterval -> {
+            if (reservedTimeIntervalIds.contains(timeInterval.getId())) {
+                timeInterval.setReserved(true);
+            }
+        });
+
+        placeRepository.save(place);
     }
 
     private <T> void updateIfNotEmpty(Consumer<T> setter, T value) {
