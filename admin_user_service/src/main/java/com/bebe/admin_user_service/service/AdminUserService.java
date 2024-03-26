@@ -51,12 +51,13 @@ public class AdminUserService {
         return adminUserRepository.save(adminToUpdate);
     }
 
-    public void deleteAdminById(Long adminId) {
-        adminUserRepository.deleteById(adminId);
-        System.out.println("Deleted successfully");
-    }
-
     private <T> void updateIfNotEmpty(Consumer<T> setter, T value) {
         if (value != null && !value.toString().isEmpty()) setter.accept(value);
+    }
+
+    public void deleteAdminById(Long adminId) {
+        adminUserRepository.deleteById(adminId);
+
+        System.out.println("Deleted successfully");
     }
 }
