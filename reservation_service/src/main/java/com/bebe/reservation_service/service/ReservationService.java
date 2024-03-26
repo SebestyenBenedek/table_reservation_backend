@@ -6,6 +6,7 @@ import com.bebe.reservation_service.model.*;
 import com.bebe.reservation_service.repository.ReservationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -23,27 +24,72 @@ public class ReservationService {
     }
 
     public Reservation saveReservation(NewReservationDTO reservation) {
-        Place place = webclientConfig.getWebClientBuilder()
+        Place place = getPlaceFromPlaceService(reservation.placeId());
+
+        if (place == null) {
+            throw new RuntimeException("Place not found");
+        }
+
+        LocalDate reservationDate = reservation.reservationDate();
+        LocalTime reservationStartTime = reservation.reservationFrom();
+        LocalTime reservationEndTime = reservation.reservationTo();
+
+        PlaceTable freeTable = getRandomFreeTable(place.getTables(), reservationDate, reservationStartTime, reservationEndTime);
+
+        if (freeTable == null) {
+            throw new RuntimeException("No free tables available");
+        }
+
+        Set<Long> reservedTimeIntervalIds = reserveTimeInterval(freeTable, reservationDate, reservationStartTime, reservationEndTime);
+
+        updatePlaceWithReservedIntervals(place, freeTable.getId(), reservedTimeIntervalIds);
+
+        Reservation newReservation = createReservationEntity(reservation, freeTable.getId(), reservedTimeIntervalIds);
+
+        return reservationRepository.save(newReservation);
+    }
+
+    private Reservation createReservationEntity(NewReservationDTO reservation, Long tableId, Set<Long> reservedTimeIntervalIds) {
+        Reservation newReservation = new Reservation();
+        newReservation.setGuestUserId(reservation.guestUserId());
+        newReservation.setPlaceId(reservation.placeId());
+        newReservation.setTableId(tableId);
+        newReservation.setTimeIntervalIds(reservedTimeIntervalIds);
+        return newReservation;
+    }
+
+    private Place getPlaceFromPlaceService(Long placeId) {
+        return webclientConfig.getWebClientBuilder()
                 .build()
                 .get()
-                .uri("http://place_service/places/{id}", reservation.placeId())
+                .uri("http://place_service/places/{id}", placeId)
                 .retrieve()
                 .bodyToMono(Place.class)
                 .block();
+    }
 
-        assert place != null;
-        PlaceTable freeTable = getRandomFreeTable(place.getTables(), reservation.reservationDate(), reservation.reservationFrom(), reservation.reservationTo());
-        Set<Long> reservedTimeIntervalIds = reserveTimeInterval(freeTable, reservation.reservationDate(), reservation.reservationFrom(), reservation.reservationTo());
+    private void updatePlaceWithReservedIntervals(Place place, Long tableId, Set<Long> reservedTimeIntervalIds) {
+        place.getTables().stream()
+                .filter(table -> table.getId().equals(tableId))
+                .findFirst()
+                .ifPresent(table -> {
+                    table.getTimeIntervals().stream()
+                            .filter(timeInterval -> reservedTimeIntervalIds.contains(timeInterval.getId()))
+                            .forEach(timeInterval -> timeInterval.setReserved(true));
 
-        Reservation newReservation = new Reservation();
+                    updatePlaceInPlaceService(place);
+                });
+    }
 
-        newReservation.setGuestUserId(reservation.guestUserId());
-        newReservation.setPlaceId(reservation.placeId());
-        assert freeTable != null;
-        newReservation.setTableId(freeTable.getId());
-        newReservation.setTimeIntervalIds(reservedTimeIntervalIds);
-
-        return reservationRepository.save(newReservation);
+    private void updatePlaceInPlaceService(Place place) {
+        webclientConfig.getWebClientBuilder()
+                .build()
+                .put()
+                .uri("http://place_service/places/{id}", place.getId())
+                .body(Mono.just(place), Place.class)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
     }
 
     private boolean hasOverlappingInterval(TimeInterval interval, LocalDate reservationDate, LocalTime currentTime) {
@@ -58,15 +104,10 @@ public class ReservationService {
 
     private boolean isTableFree(PlaceTable table, LocalDate reservationDate, LocalTime reservationFrom, LocalTime reservationTo) {
         for (LocalTime currentTime = reservationFrom; currentTime.isBefore(reservationTo); currentTime = currentTime.plusMinutes(30)) {
-            boolean intervalFound = false;
-            for (TimeInterval interval : table.getTimeIntervals()) {
-                if (hasOverlappingInterval(interval, reservationDate, currentTime)) {
-                    intervalFound = true;
-                    if (interval.isReserved()) {
-                        return false;
-                    }
-                }
-            }
+            LocalTime current = currentTime;
+            boolean intervalFound = table.getTimeIntervals().stream()
+                    .anyMatch(interval -> hasOverlappingInterval(interval, reservationDate, current) && interval.isReserved());
+
             if (!intervalFound) {
                 return false;
             }
@@ -78,12 +119,13 @@ public class ReservationService {
         Set<Long> reservedTimeIntervals = new HashSet<>();
 
         for (LocalTime currentTime = reservationFrom; currentTime.isBefore(reservationTo); currentTime = currentTime.plusMinutes(30)) {
-            for (TimeInterval interval : table.getTimeIntervals()) {
-                if (hasOverlappingInterval(interval, reservationDate, currentTime)) {
-                    interval.setReserved(true);
-                    reservedTimeIntervals.add(interval.getId());
-                }
-            }
+            LocalTime current = currentTime;
+            table.getTimeIntervals().stream()
+                    .filter(interval -> hasOverlappingInterval(interval, reservationDate, current) && !interval.isReserved())
+                    .forEach(interval -> {
+                        interval.setReserved(true);
+                        reservedTimeIntervals.add(interval.getId());
+                    });
         }
         return reservedTimeIntervals;
     }
