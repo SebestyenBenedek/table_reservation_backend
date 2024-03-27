@@ -5,12 +5,14 @@ import com.bebe.reservation_service.dto.NewReservationDTO;
 import com.bebe.reservation_service.model.*;
 import com.bebe.reservation_service.repository.ReservationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ReservationService {
@@ -36,10 +38,6 @@ public class ReservationService {
 
         PlaceTable freeTable = getRandomFreeTable(place.getTables(), reservationDate, reservationStartTime, reservationEndTime);
 
-        if (freeTable == null) {
-            throw new RuntimeException("No free tables available");
-        }
-
         Set<Long> reservedTimeIntervalIds = reserveTimeInterval(freeTable, reservationDate, reservationStartTime, reservationEndTime);
 
         updatePlaceWithReservedIntervals(place, freeTable.getId(), reservedTimeIntervalIds);
@@ -62,7 +60,7 @@ public class ReservationService {
         return webclientConfig.getWebClientBuilder()
                 .build()
                 .get()
-                .uri("http://place_service/places/{id}", placeId)
+                .uri("http://place-service/places/{id}", placeId)
                 .retrieve()
                 .bodyToMono(Place.class)
                 .block();
@@ -73,20 +71,27 @@ public class ReservationService {
                 .filter(table -> table.getId().equals(tableId))
                 .findFirst()
                 .ifPresent(table -> {
+                    Set<TimeInterval> updatedTimeIntervals = new HashSet<>();
                     table.getTimeIntervals().stream()
                             .filter(timeInterval -> reservedTimeIntervalIds.contains(timeInterval.getId()))
-                            .forEach(timeInterval -> timeInterval.setReserved(true));
-
-                    updatePlaceInPlaceService(place);
+                            .forEach(timeInterval -> {
+                                timeInterval.setReserved(!timeInterval.isReserved());
+                                updatedTimeIntervals.add(timeInterval);
+                            });
+                    reserveTimeIntervalsInPlaceService(place, table, updatedTimeIntervals);
                 });
     }
 
-    private void updatePlaceInPlaceService(Place place) {
+    private void reserveTimeIntervalsInPlaceService(Place place, PlaceTable table, Set<TimeInterval> timeIntervals) {
+        Long tableId = table.getId();
+        Set<Long> reservedTimeIntervalIds = timeIntervals.stream()
+                                                            .map(TimeInterval::getId)
+                                                            .collect(Collectors.toSet());
         webclientConfig.getWebClientBuilder()
                 .build()
                 .put()
-                .uri("http://place_service/places/{id}", place.getId())
-                .body(Mono.just(place), Place.class)
+                .uri("http://place-service/places/{id}/reserve?tableId={tableId}", place.getId(), tableId)
+                .body(Mono.just(reservedTimeIntervalIds), new ParameterizedTypeReference<>() {})
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();
@@ -106,7 +111,7 @@ public class ReservationService {
         for (LocalTime currentTime = reservationFrom; currentTime.isBefore(reservationTo); currentTime = currentTime.plusMinutes(30)) {
             LocalTime current = currentTime;
             boolean intervalFound = table.getTimeIntervals().stream()
-                    .anyMatch(interval -> hasOverlappingInterval(interval, reservationDate, current) && interval.isReserved());
+                    .anyMatch(interval -> hasOverlappingInterval(interval, reservationDate, current) && !interval.isReserved());
 
             if (!intervalFound) {
                 return false;
@@ -132,9 +137,12 @@ public class ReservationService {
 
     private PlaceTable getRandomFreeTable(Set<PlaceTable> tables, LocalDate reservationDate, LocalTime reservationFrom, LocalTime reservationTo) {
         List<PlaceTable> freeTables = new ArrayList<>();
+        System.out.println(reservationDate);
 
         for (PlaceTable table : tables) {
+            System.out.println(table.getTimeIntervals());
             if (isTableFree(table, reservationDate, reservationFrom, reservationTo)) {
+                System.out.println(table);
                 freeTables.add(table);
             }
         }
@@ -168,6 +176,15 @@ public class ReservationService {
     }
 
     public void deleteReservationById(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                        .orElseThrow(() -> new RuntimeException("Reservation not found"));
+
+        Set<Long> reservedTimeIntervalIds = reservation.getTimeIntervalIds();
+        Place place = getPlaceFromPlaceService(reservation.getPlaceId());
+        Long tableId = reservation.getTableId();
+
+        updatePlaceWithReservedIntervals(place, tableId, reservedTimeIntervalIds);
+
         reservationRepository.deleteById(reservationId);
     }
 }

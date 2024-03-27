@@ -17,21 +17,23 @@ public class HalfHourIntervalGenerator implements TimeIntervalGenerator {
     private static final int HALF_HOUR_IN_MINUTES = 30;
 
     @Override
-    public Set<TimeInterval> generateTimeInterval(Set<TimeIntervalForDayDTO> timeIntervalsForWeek, LocalDate startDate, PlaceTable table) {
+    public Set<TimeInterval> generateTimeInterval(Set<TimeIntervalForDayDTO> timeIntervalsForWeek, PlaceTable table) {
         Set<TimeInterval> newTimeIntervals = new HashSet<>();
 
-        LocalDate currentDate = startDate;
-        LocalDate endDate = startDate.plusMonths(1);
+        LocalDate currentDate = LocalDate.now();
+        LocalDate endDate = currentDate.plusMonths(1);
 
         while (currentDate.isBefore(endDate)) {
-            for (TimeIntervalForDayDTO openHoursPerDay : timeIntervalsForWeek) {
-                LocalTime currentTime = openHoursPerDay.openingHour();
-                LocalTime closingHour = openHoursPerDay.closingHour();
+            for (TimeIntervalForDayDTO timeIntervalForDay : timeIntervalsForWeek) {
+                if (timeIntervalForDay.day().equals(currentDate.getDayOfWeek())) {
+                    LocalTime currentTime = timeIntervalForDay.openingHour();
+                    LocalTime closingHour = timeIntervalForDay.closingHour();
 
-                while (currentTime.isBefore(closingHour)) {
-                    TimeInterval timeInterval = setFieldsOfTimeInterval(openHoursPerDay.day(), currentDate, currentTime, table);
-                    newTimeIntervals.add(timeInterval);
-                    currentTime = currentTime.plusMinutes(HALF_HOUR_IN_MINUTES);
+                    while (currentTime.isBefore(closingHour)) {
+                        TimeInterval timeInterval = setFieldsOfTimeInterval(timeIntervalForDay.day(), currentDate, currentTime, table);
+                        newTimeIntervals.add(timeInterval);
+                        currentTime = currentTime.plusMinutes(HALF_HOUR_IN_MINUTES);
+                    }
                 }
             }
             currentDate = currentDate.plusDays(1);

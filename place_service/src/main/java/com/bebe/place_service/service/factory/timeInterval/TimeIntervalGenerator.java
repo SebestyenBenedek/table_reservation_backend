@@ -12,5 +12,5 @@ import java.time.LocalTime;
 import java.util.Set;
 
 public interface TimeIntervalGenerator {
-    Set<TimeInterval> generateTimeInterval(Set<TimeIntervalForDayDTO> timeIntervalForDayDTOSet, LocalDate currentDate, PlaceTable table);
+    Set<TimeInterval> generateTimeInterval(Set<TimeIntervalForDayDTO> timeIntervalForDayDTOSet, PlaceTable table);
 }

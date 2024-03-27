@@ -68,12 +68,11 @@ public class PlaceService {
     }
 
     private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto, Set<PlaceTable> tables) {
-        LocalDate currentDate = LocalDate.now();
         Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.timeIntervalForWeek().timeIntervalForDayDTOSet();
         Set<TimeInterval> timeIntervals = new HashSet<>();
 
         for (PlaceTable table : tables) {
-                timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDays, currentDate, table));
+                timeIntervals.addAll(timeIntervalGenerator.generateTimeInterval(openHoursPerDays, table));
         }
 
         setTimeIntervalsForTables(tables, timeIntervals);
@@ -121,7 +120,7 @@ public class PlaceService {
 
         tableToUpdate.getTimeIntervals().forEach(timeInterval -> {
             if (reservedTimeIntervalIds.contains(timeInterval.getId())) {
-                timeInterval.setReserved(true);
+                timeInterval.setReserved(!timeInterval.isReserved());
             }
         });
 
