@@ -52,7 +52,7 @@ public class PlaceController {
     @PutMapping("/{id}/reserve")
     public void updateReservedTimeIntervals(@PathVariable("id") Long placeId,
                                             @RequestParam Long tableId,
-                                            @RequestParam Set<Long> reservedTimeIntervalIds) {
+                                            @RequestBody Set<Long> reservedTimeIntervalIds) {
         placeService.reserveTimeIntervals(placeId, tableId, reservedTimeIntervalIds);
     }
 }
