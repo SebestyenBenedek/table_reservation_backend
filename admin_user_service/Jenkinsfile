@@ -1,0 +1,96 @@
+pipeline { //ngrok          todo: docker config with jennkins base image
+    agent any  //docker.socket config
+    environment {
+        DOCKER_IMAGE = 'admin_user_service'  //secret
+        DOCKER_REGISTRY = 'bebe97'      //secret
+        TAG = "${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${env.BRANCH_NAME}"
+    }
+
+    triggers {
+        //githubPush trigger(web hook-ot configurálni a jenkinsel)
+        // github-on add new webhook, payload URL(jenkins url-je)
+        //content-type: application/json
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Checkout the source branch
+                    checkout([$class: 'GitSCM', branches: [[name: 'development/*']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/SebestyenBenedek/table_reservation_backend.git']]])
+                    // Checkout the target branch
+                    checkout([$class: 'GitSCM', branches: [[name: 'feature/*']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/SebestyenBenedek/table_reservation_backend.git']]])
+                }
+            }
+        }
+
+        stage('Authentication') {
+
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Build the source branch
+                    docker.build("${DOCKER_IMAGE}:${env.BRANCH_NAME}") // with credentials
+                    // Build the target branch
+                    docker.build("${DOCKER_IMAGE}:feature-branch")
+                }
+            }
+        }
+
+        stage('Test-feature-branch') {
+            steps {
+                script {
+                    // Test the source branch
+                    docker.image("${DOCKER_IMAGE}:${env.BRANCH_NAME}").inside {
+                        sh 'echo "Testing source branch..."'
+                        // Run tests here
+                    }
+                    // Test the target branch
+                    docker.image("${DOCKER_IMAGE}:feature-branch").inside {
+                        sh 'echo "Testing target branch..."'
+                        // Run tests here
+                    }
+                }
+            }
+        }
+
+        stage('Test-merged-feature-branch') {
+            steps {
+                script {
+                    // Test the source branch
+                    docker.image("${DOCKER_IMAGE}:${env.BRANCH_NAME}").inside {
+                        sh 'echo "Testing source branch..."'
+                        // Run tests here
+                    }
+                    // Test the target branch
+                    docker.image("${DOCKER_IMAGE}:feature-branch").inside {
+                        sh 'echo "Testing target branch..."'
+                        // Run tests here
+                    }
+                }
+            }
+        }
+
+        //todo: pusholni az új docker imaget dockerhubra + verziószámolás (tag) predefined variables!
+
+        stage('Merge') {
+            //todo: manuális step(gomb) + if-es alágazás hogy látszódjon a log-ban mi történt
+            when {
+                expression {
+                    // Implement logic to check if all tests passed
+                    // This is a placeholder and should be replaced with actual logic
+                    return true
+                }
+            }
+            steps {
+                script {
+                    // Use the API of your version control system to merge branches
+                    // This is a placeholder and should be replaced with actual API calls
+                    sh 'echo "Merging branches..."'
+                }
+            }
+        }
+    }
+}
