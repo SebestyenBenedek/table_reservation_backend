@@ -1,29 +1,39 @@
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.pull_request.head.ref'],
+                [key: 'sha', value: '$.pull_request.head.sha']
+            ],
+            causeString: 'Triggered by GitHub pull request',
+            domain: credentials('ngrok_domain'),
+            token: credentials('token'),
+            printContributedVariables: true,
+            printPostContent: true
+        )
+    }
 pipeline {
-    environment {
-        DOCKER_IMAGE = 'admin_user_service'
-        DOCKER_REGISTRY = 'docker_hub_username'
-        TAG = "${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${env.BRANCH_NAME}"
+    agent any
+    
+    tools {
+        maven 'maven_3.6.3'
+        jdk 'jdk_8'
     }
 
-    //triggers {
-    //    GenericTrigger(
-    //        genericVariables: [
-    //            [key: 'ref', value: '$.pull_request.head.ref'],
-    //            [key: 'sha', value: '$.pull_request.head.sha']
-    //        ],
-    //        causeString: 'Triggered by GitHub pull request',
-    //        domain: credentials('ngrok_domain')
-    //        token: credentials('token'),
-    //        printContributedVariables: true,
-    //        printPostContent: true
-    //    )
-    //}
+    environment {
+        Version_Major = 1
+        Version_Minor = 0
+        Version_Patch = 0
+        
+        DOCKER_IMAGE = 'admin_user_service' //secret
+        DOCKER_REGISTRY = 'bebe97'
+        DOCKER = "${DOCKER_REGISTRY}/${DOCKER_IMAGE}"
+    }
 
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'development',
-                credentialsId: 'github_credential',
+                credentialsId: 'github_credentials',
                 url: 'https://github.com/SebestyenBenedek/table_reservation_backend.git'
             }
         }
@@ -31,14 +41,138 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    checkout([$class: 'GitSCM', branches: [[name: "${ref}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/SebestyenBenedek/table_reservation_backend.git']]])
-                }
-                script {
-                    sh 'cd admin_user_service'
+                    try {
+                        def version = VersionNumber([
+                            versionNumberString: "${env.Version_Major}.${env.Version_Minor}.${env.Version_Patch}".replaceAll("[^a-zA-Z0-9_.-]", "_"),
+                            worstResultForIncrement: 'SUCCESS'
+                        ])
+                        env.VERSION = "${version}"
+                        echo "Incremented Version: ${env.VERSION}"
+                        sh """
+                            cd admin_user_service
+                            docker build -t ${env.DOCKER}:${env.VERSION} -f admin_user_service.Dockerfile .
+                        """
+                    } catch (Exception e) {
+                        echo "Failed to build Docker image: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                    }
                 }
             }
         }
 
-        
+        stage('Authentication') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker_hub_credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh 'echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    try {
+                        dir('admin_user_service') {
+                            sh 'mvn test'
+                            sh 'echo "tests ran successfully"'
+                        }
+                    } catch (error) {
+                        echo "Tests failed: ${error.getMessage()}"
+                        throw error
+                    }
+                }
+            }
+        }
+
+        stage('Merge-main-branch-to-feature-branch') {
+            steps {
+                script {
+                    try {
+                        sh 'git checkout development'
+                        sh 'git pull origin development'
+                        
+                        def ref = env.CHANGE_BRANCH ?: 'feature/add_docker_and_jenkins_to_admin_user_service'
+                        sh "git fetch origin ${ref}"
+                        sh "git checkout ${ref}"
+                        sh "git merge development"
+                    } catch (error) {
+                        echo "Merge failed: ${error.getMessage()}"
+                        throw error
+                    }
+                    
+                }
+            }
+        }
+
+        stage('Test-merged-feature-branch') {
+            steps {
+                script {
+                        try {
+                            dir('admin_user_service') {
+                                sh 'mvn test'
+                                sh 'echo "tests ran successfully"'
+                            }
+                        } catch (error) {
+                            echo "Tests failed: ${error.getMessage()}"
+                            throw error
+                        }
+                }
+            }
+        }
+
+        stage('Manual-merge-approval') {
+            steps {
+                script {
+                    def userInput = input(id: 'userInput', message: 'Please review and approve the merge:', parameters: [
+                        [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'approve']
+                    ])
+                    if (userInput == false) {
+                        error('Merge not approved. Aborting.')
+                    }
+                }
+            }
+        }
+
+        stage('Merge-feature-branch-to-main') {
+            steps {
+                script {
+                    try {
+                        sh 'git checkout development'
+                        sh 'git pull origin development'
+                        
+                        def ref = env.CHANGE_BRANCH ?: 'feature/add_docker_and_jenkins_to_admin_user_service'
+                        sh "git fetch origin ${ref}"
+                        sh "git checkout ${ref}"
+                        sh "git merge development"
+                        
+                        withCredentials([usernamePassword(credentialsId: 'github_credentials_with_token', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+                            sh "git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/SebestyenBenedek/table_reservation_backend.git ${ref}"
+                        }
+                    } catch (error) {
+                        echo "Merge failed: ${error.getMessage()}"
+                        throw error
+                    }
+                    
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker_hub_credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        try {
+                            sh '''
+                                echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin https://registry.hub.docker.com
+                                docker push "${DOCKER}:${VERSION}"
+                            '''
+                        } catch (error) {
+                            echo "Push image to dockerhub failed: ${error.getMessage()}"
+                            throw error
+                        }
+                    }
+                }
+            }
+        }
     }
 }
