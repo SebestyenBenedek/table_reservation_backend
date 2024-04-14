@@ -20,11 +20,7 @@ pipeline {
     }
 
     environment {
-        Version_Major = 1
-        Version_Minor = 0
-        Version_Patch = 0
-        
-        DOCKER_IMAGE = 'admin_user_service' //secret
+        DOCKER_IMAGE = 'admin_user_service'
         DOCKER_REGISTRY = 'bebe97'
         DOCKER = "${DOCKER_REGISTRY}/${DOCKER_IMAGE}"
     }
@@ -42,23 +38,37 @@ pipeline {
             steps {
                 script {
                     try {
-                        def version = VersionNumber([
-                            versionNumberString: "${env.Version_Major}.${env.Version_Minor}.${env.Version_Patch}".replaceAll("[^a-zA-Z0-9_.-]", "_"),
-                            worstResultForIncrement: 'SUCCESS'
-                        ])
-                        env.VERSION = "${version}"
-                        echo "Incremented Version: ${env.VERSION}"
-                        sh """
-                            cd admin_user_service
-                            docker build -t ${env.DOCKER}:${env.VERSION} -f admin_user_service.Dockerfile .
-                        """
+                        dir('admin_user_service') {
+                            sh 'chmod +x ./increment_version.sh'
+                            def newVersion = sh(script: './increment_version.sh', returnStdout: true).trim()
+                            env.VERSION = newVersion
+                            sh "docker build -t ${env.DOCKER}:${env.VERSION} -f admin_user_service.Dockerfile ."
+                        }
                     } catch (Exception e) {
-                        echo "Failed to build Docker image: ${e.message}"
+                        sh 'echo "Failed to build Docker image: ${e.message}"'
                         currentBuild.result = 'FAILURE'
                     }
                 }
             }
         }
+
+        stage('Commit Version Update') {
+            steps {
+                script {
+                    sh """
+                        git config user.name 'SebestyenBenedek'
+                        git config user.email 'sebi.bebe@gmail.com'
+                        git add version.txt
+                        git commit -m "Update version to ${env.VERSION}"
+                        git push origin development
+                    """
+                    withCredentials([usernamePassword(credentialsId: 'github_credentials_with_token', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+                        sh "git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/SebestyenBenedek/table_reservation_backend.git development"
+                    }
+                }
+            }
+        }
+
 
         stage('Authentication') {
             steps {
@@ -76,9 +86,9 @@ pipeline {
                             sh 'mvn test'
                             sh 'echo "tests ran successfully"'
                         }
-                    } catch (error) {
-                        echo "Tests failed: ${error.getMessage()}"
-                        throw error
+                    } catch (Exception e) {
+                        sh 'echo "Failed to build Docker image: ${e.message}"'
+                        currentBuild.result = 'FAILURE'
                     }
                 }
             }
@@ -90,16 +100,16 @@ pipeline {
                     try {
                         sh 'git checkout development'
                         sh 'git pull origin development'
-                        
+
                         def ref = env.CHANGE_BRANCH ?: 'feature/add_docker_and_jenkins_to_admin_user_service'
                         sh "git fetch origin ${ref}"
                         sh "git checkout ${ref}"
                         sh "git merge development"
-                    } catch (error) {
-                        echo "Merge failed: ${error.getMessage()}"
-                        throw error
+                    } catch (Exception e) {
+                        sh 'echo "Failed to build Docker image: ${e.message}"'
+                        currentBuild.result = 'FAILURE'
                     }
-                    
+
                 }
             }
         }
@@ -112,9 +122,9 @@ pipeline {
                                 sh 'mvn test'
                                 sh 'echo "tests ran successfully"'
                             }
-                        } catch (error) {
-                            echo "Tests failed: ${error.getMessage()}"
-                            throw error
+                        } catch (Exception e) {
+                            sh 'echo "Failed to build Docker image: ${e.message}"'
+                            currentBuild.result = 'FAILURE'
                         }
                 }
             }
@@ -139,20 +149,20 @@ pipeline {
                     try {
                         sh 'git checkout development'
                         sh 'git pull origin development'
-                        
+
                         def ref = env.CHANGE_BRANCH ?: 'feature/add_docker_and_jenkins_to_admin_user_service'
                         sh "git fetch origin ${ref}"
                         sh "git checkout ${ref}"
                         sh "git merge development"
-                        
+
                         withCredentials([usernamePassword(credentialsId: 'github_credentials_with_token', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
                             sh "git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/SebestyenBenedek/table_reservation_backend.git ${ref}"
                         }
-                    } catch (error) {
-                        echo "Merge failed: ${error.getMessage()}"
-                        throw error
+                    } catch (Exception e) {
+                        sh 'echo "Failed to build Docker image: ${e.message}"'
+                        currentBuild.result = 'FAILURE'
                     }
-                    
+
                 }
             }
         }
@@ -164,11 +174,11 @@ pipeline {
                         try {
                             sh '''
                                 echo ${DOCKER_PASSWORD} | docker login --username ${DOCKER_USERNAME} --password-stdin https://registry.hub.docker.com
-                                docker push "${DOCKER}:${VERSION}"
+                                docker push "${env.DOCKER}:${env.VERSION}"
                             '''
-                        } catch (error) {
-                            echo "Push image to dockerhub failed: ${error.getMessage()}"
-                            throw error
+                        } catch (Exception e) {
+                            sh 'echo "Failed to build Docker image: ${e.message}"'
+                            currentBuild.result = 'FAILURE'
                         }
                     }
                 }
