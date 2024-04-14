@@ -1,7 +1,11 @@
 #!/bin/bash
 
-versionFile=$(<version.txt)
-version=$(echo "$versionFile" | tr -d '[:space:]')
+version=$(cat version.txt | tr -d '[:space:]')
+
+if [[ ! -f version.txt ]] || [[ -z "$version" ]]; then
+    echo "Error: version.txt does not exist or is empty."
+    exit 1
+fi
 
 IFS='.' read -ra versionParts <<< "$version"
 
