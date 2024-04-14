@@ -6,6 +6,7 @@ if [[ ! -f version.txt ]] || [[ -z "$version" ]]; then
     echo "Error: version.txt does not exist or is empty."
     exit 1
 fi
+version='1.0.0'
 
 IFS='.' read -ra versionParts <<< "$version"
 
