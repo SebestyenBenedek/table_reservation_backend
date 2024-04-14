@@ -26,6 +26,6 @@ fi
 
 newVersion="${major}.${minor}.${patch}"
 
-echo "Incremented Version: ${newVersion}"
+echo "$newVersion"
 
 echo "$newVersion" > version.txt
