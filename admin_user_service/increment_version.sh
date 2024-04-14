@@ -1,11 +1,12 @@
 #!/bin/bash
 
+version=$(cat version.txt)
+
 if [[ ! -f version.txt ]] || [[ -z "$version" ]]; then
     echo "Error: version.txt does not exist or is empty."
     exit 1
 fi
 
-version=$(cat version.txt)
 IFS='.' read -ra versionParts <<< "$version"
 
 major=${versionParts[0]}
