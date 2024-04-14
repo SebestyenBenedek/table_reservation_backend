@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=$(cat version.txt)
+version=$(cat version.txt | tr -d '[:space:]')
 
 if [[ ! -f version.txt ]] || [[ -z "$version" ]]; then
     echo "Error: version.txt does not exist or is empty."
@@ -13,9 +13,9 @@ major=${versionParts[0]}
 minor=${versionParts[1]}
 patch=${versionParts[2]}
 
-if (( patch < 10 )); then
+if (( patch < 9 )); then
     ((patch++))
-elif (( minor < 10 )); then
+elif (( minor < 9 )); then
     ((minor++))
     patch=0
 else
