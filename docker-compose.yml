@@ -240,7 +240,6 @@ services:
   sonarqube-db:
     image: postgres:12
     environment:
-      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
       DB_NAME: ${PSQL_NAME}
       DB_USERNAME: ${PSQL_USERNAME}
       DB_PASSWORD: ${PSQL_PASSWORD}
