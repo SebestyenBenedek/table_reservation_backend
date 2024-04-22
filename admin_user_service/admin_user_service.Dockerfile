@@ -7,7 +7,7 @@ COPY src ./src
 
 RUN mvn clean package -DskipTests
 
-FROM openjdk:17-jdk-alpine3.13 as release
+FROM openjdk:17-jdk-alpine3.13
 
 WORKDIR /app
 
@@ -15,11 +15,9 @@ EXPOSE 8085
 
 COPY --from=build /app/target/*.jar /app/app.jar
 
-ENV SPRING_PROFILES_ACTIVE=production
+RUN adduser -D -h /app -u 5000 appuser && \
+    chown -R appuser:appuser /app
 
-RUN adduser -D -h /app -u 5000 myuser && \
-    chown -R myuser:myuser /app
-
-USER myuser
+USER appuser
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
