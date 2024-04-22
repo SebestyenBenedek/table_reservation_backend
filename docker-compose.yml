@@ -1,0 +1,313 @@
+version: '3.8'
+
+x-eureka-url: &eureka-url
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+
+x-mysql-service: &mysql-service
+ image: mysql:8.0.36
+ environment:
+    DB_USERNAME: ${DB_USERNAME}
+    DB_PASSWORD: ${DB_PASSWORD}
+ networks:
+    - backend
+ restart: unless-stopped
+
+x-spring-service: &spring-service
+ environment:
+    <<: *eureka-url
+    SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+    SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+ depends_on:
+    - eureka-server
+    - api-gateway
+ networks:
+    - backend
+ deploy:
+    resources:
+      limits:
+        cpus: '0.50'
+        memory: 256M
+ restart: unless-stopped
+
+
+
+
+services:
+  eureka-server:
+    build:
+      context: ./eureka_server
+      dockerfile: eureka_server.Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/eureka/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api_gateway
+      dockerfile: api_gateway.Dockerfile
+    environment:
+      <<: *eureka-url
+    ports:
+      - "8081:8081"
+    depends_on:
+      - eureka-server
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    restart: unless-stopped
+
+  admin-user-service:
+    build:
+      context: ./admin_user_service
+      dockerfile: admin_user_service.Dockerfile
+    <<: *spring-service
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_CONNECTION_STRING}/adminUserDB
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - admin-user-service-db
+
+  admin-user-service-db:
+    <<: *mysql-service
+    environment:
+      DB_NAME: adminUserDB
+    healthcheck:
+      test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${ADMIN_USER_DB_NAME}"]
+    ports:
+      - "3316:3306"
+    volumes:
+      - admin_user_service_db_data:/var/lib/mysql/data
+
+  guest-user-service:
+    build:
+      context: ./guest_user_service
+      dockerfile: guest_user_service.Dockerfile
+    <<: *spring-service
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_CONNECTION_STRING}/guestUserDB
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - guest-user-service-db
+
+  guest-user-service-db:
+    <<: *mysql-service
+    environment:
+      DB_NAME: guestUserDB
+    healthcheck:
+      test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${GUEST_USER_DB_NAME}"]
+    ports:
+      - "3326:3306"
+    volumes:
+      - guest_user_service_db_data:/var/lib/mysql/data
+
+  place-service:
+    build:
+      context: ./place_service
+      dockerfile: place_service.Dockerfile
+    <<: *spring-service
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_CONNECTION_STRING}/placeDB
+    ports:
+      - "8087:8087"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - place-service-db
+
+  place-service-db:
+    <<: *mysql-service
+    environment:
+      DB_NAME: placeDB
+    healthcheck:
+      test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${PLACE_DB_NAME}"]
+    ports:
+      - "3336:3306"
+    volumes:
+      - place_service_db_data:/var/lib/mysql/data
+
+  reservation-service:
+    build:
+      context: ./reservation_service
+      dockerfile: reservation_service.Dockerfile
+    <<: *spring-service
+    environment:
+      SPRING_DATASOURCE_URL: ${DB_CONNECTION_STRING}/reservationDB
+    ports:
+      - "8088:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - reservation-service-db
+
+  reservation-service-db:
+    <<: *mysql-service
+    environment:
+      DB_NAME: reservationDB
+    healthcheck:
+      test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${RESERVATION_DB_NAME}"]
+    ports:
+      - "3346:3306"
+    volumes:
+      - reservation_service_db_data:/var/lib/mysql/data
+
+  custom_jenkins:
+    build:
+      context: ./
+      dockerfile: custom-jenkins.Dockerfile
+    image: custom_multi_jenkins
+    ports:
+      - "8082:8080"
+    volumes:
+      - jenkins_home_2:/var/jenkins_home
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  jenkins_agent:
+    image: jenkins/inbound-agent:latest-jdk17
+    networks:
+      - backend
+    deploy:
+      replicas: 6
+      restart_policy:
+        condition: on-failure
+
+
+  sonarqube:
+    build:
+      context: ./
+      dockerfile: custom-sonarqube.Dockerfile    
+    environment:
+      SONAR_JDBC_URL: ${SONAR_CONNECTION_STRING}/sonarqube
+      SONAR_JDBC_USERNAME: ${SONAR_USERNAME}
+      SONAR_JDBC_PASSWORD: ${SONAR_PASSWORD}
+    ports:
+      - "9000:9000"
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    healthcheck:
+      test: CMD wget -qO- http://127.0.0.1:9000/api/system/status | grep -q -e '"status":"UP"' -e '"status":"DB_MIGRATION_NEEDED"' -e '"status":"DB_MIGRATION_RUNNING"' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_conf:/opt/sonarqube/conf
+    networks:
+      - backend
+    restart: unless-stopped
+
+  sonarqube-db:
+    image: postgres:12
+    environment:
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+      DB_NAME: ${PSQL_NAME}
+      DB_USERNAME: ${PSQL_USERNAME}
+      DB_PASSWORD: ${PSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${PSQL_USERNAME}", "-d", "${PSQL_NAME}"]
+    expose:
+      - "5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
+
+  jaeger:
+    image: rancher/jaegertracing-all-in-one:1.20.0
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "14269:14269"
+    networks:
+      - backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:main-ubuntu
+    ports:
+      - "3030:3030"
+    environment:
+      - GF_SERVER_HTTP_PORT=3030
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./custom.ini:/etc/grafana/grafana.ini
+    networks:
+      - backend
+    restart: unless-stopped
+
+  prometheus:
+    image: bitnami/prometheus:2.51.2-debian-12-r0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  admin_user_service_db_data:
+  guest_user_service_db_data:
+  place_service_db_data:
+  reservation_service_db_data:
+  jenkins_home_2:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_conf:
+  postgresql_data:
+  grafana_data:
+  prometheus_data:
+
+
+networks:
+  backend:
+    driver: bridge
