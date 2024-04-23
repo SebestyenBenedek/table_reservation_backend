@@ -1,5 +1,5 @@
 # Stage 1: Base image with necessary tools
-FROM jenkins/jenkins:lts as builder
+FROM jenkins/jenkins:lts AS builder
 
 # Switch to root user to install packages
 USER root
@@ -37,11 +37,14 @@ FROM jenkins/jenkins:lts
 COPY --from=builder /usr/bin/docker /usr/bin/docker
 COPY --from=builder /usr/bin/mvn /usr/bin/mvn
 
+# Set the Jenkins reference directory
+ENV JENKINS_REF /usr/share/jenkins/ref
+
 # Copy the plugins.txt file to the Jenkins reference directory
 COPY ./plugins.txt $JENKINS_REF/
 
 # Install plugins using the jenkins-plugin-cli
-RUN jenkins-plugin-cli --plugin-file $JENKINS_REF/plugins.txt
+RUN jenkins-plugin-cli --plugin-file "$JENKINS_REF"/plugins.txt
 
 # Switch to root user to create docker group
 USER root
@@ -52,8 +55,5 @@ RUN groupadd docker && usermod -a -G docker jenkins
 # Switch back to Jenkins user
 USER jenkins
 
-# Set the Jenkins reference directory
-ENV JENKINS_REF /usr/share/jenkins/ref
-
 # Create the plugins directory in the Jenkins reference directory
-RUN mkdir -p $JENKINS_REF/plugins
+RUN mkdir -p "$JENKINS_REF"/plugins
