@@ -13,7 +13,7 @@ public class JaegerConfig {
                 .withType("const").withParam(1);
         io.jaegertracing.Configuration.ReporterConfiguration reporterConfig = io.jaegertracing.Configuration.ReporterConfiguration.fromEnv()
                 .withLogSpans(true);
-        io.jaegertracing.Configuration configuration = new io.jaegertracing.Configuration("admin-user-service")
+        io.jaegertracing.Configuration configuration = new io.jaegertracing.Configuration("api-gateway")
                 .withSampler(samplerConfiguration)
                 .withReporter(reporterConfig);
         return configuration.getTracer();
