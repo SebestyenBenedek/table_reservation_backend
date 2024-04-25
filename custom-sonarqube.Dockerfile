@@ -20,11 +20,11 @@ RUN wget "http://downloads.sonarsource.com/plugins/org/codehaus/sonar-plugins/so
     && ls -lah $SONARQUBE_HOME/extensions/plugins/
 
 # Create the sonar user
-RUN useradd -m sonar
+#RUN useradd -m sonar
 
 # Create the docker group and add SonarQube user to it
-RUN groupadd docker && usermod -a -G docker sonar
+#RUN groupadd docker && usermod -a -G docker sonar
 
 # Switch back to SonarQube user
-USER sonar
+#USER sonarqube
 

@@ -34,6 +34,7 @@ x-spring-service: &spring-service
 
 services:
   eureka-server:
+    container_name: eureka-server
     build:
       context: ./eureka_server
       dockerfile: eureka_server.Dockerfile
@@ -49,6 +50,7 @@ services:
     restart: unless-stopped
 
   api-gateway:
+    container_name: api-gateway
     build:
       context: ./api_gateway
       dockerfile: api_gateway.Dockerfile
@@ -73,6 +75,7 @@ services:
     restart: unless-stopped
 
   admin-user-service:
+    container_name: admin-user-service
     build:
       context: ./admin_user_service
       dockerfile: admin_user_service.Dockerfile
@@ -84,23 +87,26 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 3
     depends_on:
-      - admin-user-service-db
+      - admin-user-db
 
-  admin-user-service-db:
+  admin-user-db:
+    container_name: admin-user-db
     <<: *mysql-service
     environment:
       DB_NAME: adminUserDB
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${ADMIN_USER_DB_NAME}"]
     ports:
       - "3316:3306"
     volumes:
-      - admin_user_service_db_data:/var/lib/mysql/data
+      - admin_user_service_db_data:/var/lib/mysql
 
   guest-user-service:
+    container_name: guest-user-service
     build:
       context: ./guest_user_service
       dockerfile: guest_user_service.Dockerfile
@@ -112,23 +118,26 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 3
     depends_on:
-      - guest-user-service-db
+      - guest-user-db
 
-  guest-user-service-db:
+  guest-user-db:
+    container_name: guest-user-db
     <<: *mysql-service
     environment:
       DB_NAME: guestUserDB
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${GUEST_USER_DB_NAME}"]
     ports:
       - "3326:3306"
     volumes:
-      - guest_user_service_db_data:/var/lib/mysql/data
+      - guest_user_service_db_data:/var/lib/mysql
 
   place-service:
+    container_name: place-service
     build:
       context: ./place_service
       dockerfile: place_service.Dockerfile
@@ -140,23 +149,26 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 3
     depends_on:
-      - place-service-db
+      - place-db
 
-  place-service-db:
+  place-db:
+    container_name: place-db
     <<: *mysql-service
     environment:
       DB_NAME: placeDB
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${PLACE_DB_NAME}"]
     ports:
       - "3336:3306"
     volumes:
-      - place_service_db_data:/var/lib/mysql/data
+      - place_service_db_data:/var/lib/mysql
 
   reservation-service:
+    container_name: reservation-service
     build:
       context: ./reservation_service
       dockerfile: reservation_service.Dockerfile
@@ -168,23 +180,26 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 20s
       retries: 3
     depends_on:
-      - reservation-service-db
+      - reservation-db
 
-  reservation-service-db:
+  reservation-db:
+    container_name: reservation-db
     <<: *mysql-service
     environment:
       DB_NAME: reservationDB
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
       test: ["CMD", "mysql_isready", "-U", "${DB_USERNAME}", "-d", "${RESERVATION_DB_NAME}"]
     ports:
       - "3346:3306"
     volumes:
-      - reservation_service_db_data:/var/lib/mysql/data
+      - reservation_service_db_data:/var/lib/mysql
 
   custom_jenkins:
+    container_name: master-jenkins
     build:
       context: ./
       dockerfile: custom-jenkins.Dockerfile
@@ -201,16 +216,20 @@ services:
         condition: on-failure
 
   jenkins_agent:
-    image: jenkins/inbound-agent:latest-jdk17
+    container_name: jenkins-slave
+    image: jenkins/agent:latest-jdk17
+    volumes:
+      - jenkins_home_2:/var/jenkins_home
     networks:
       - backend
     deploy:
-      replicas: 6
+      replicas: 1
       restart_policy:
         condition: on-failure
 
 
   sonarqube:
+    container_name: sonarqube
     build:
       context: ./
       dockerfile: custom-sonarqube.Dockerfile    
@@ -238,15 +257,17 @@ services:
     restart: unless-stopped
 
   sonarqube-db:
+    container_name: sonarqube-db
     image: postgres:12
     environment:
+      POSTGRES_PASSWORD: ${PSQL_SUPERUSER_PASSWORD}
       DB_NAME: ${PSQL_NAME}
       DB_USERNAME: ${PSQL_USERNAME}
       DB_PASSWORD: ${PSQL_PASSWORD}
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${PSQL_USERNAME}", "-d", "${PSQL_NAME}"]
-    expose:
-      - "5432"
     volumes:
       - postgresql_data:/var/lib/postgresql/data
     networks:
@@ -254,7 +275,8 @@ services:
     restart: unless-stopped
 
   jaeger:
-    image: rancher/jaegertracing-all-in-one:1.20.0
+    container_name: jaeger
+    image: jaegertracing/all-in-one
     environment:
       - COLLECTOR_ZIPKIN_HTTP_PORT=9411
     ports:
@@ -269,6 +291,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    container_name: grafana
     image: grafana/grafana:main-ubuntu
     ports:
       - "3030:3030"
@@ -282,6 +305,7 @@ services:
     restart: unless-stopped
 
   prometheus:
+    container_name: prometheus
     image: bitnami/prometheus:2.51.2-debian-12-r0
     ports:
       - "9090:9090"
