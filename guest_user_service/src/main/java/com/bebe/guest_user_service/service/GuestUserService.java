@@ -2,8 +2,6 @@ package com.bebe.guest_user_service.service;
 
 import com.bebe.guest_user_service.model.GuestUser;
 import com.bebe.guest_user_service.repository.GuestUserRepository;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,29 +11,20 @@ import java.util.function.Consumer;
 @Service
 public class GuestUserService {
     private final GuestUserRepository guestUserRepository;
-    private final Tracer tracer;
 
     @Autowired
-    public GuestUserService(GuestUserRepository guestUserRepository, Tracer tracer) {
+    public GuestUserService(GuestUserRepository guestUserRepository) {
         this.guestUserRepository = guestUserRepository;
-        this.tracer = tracer;
     }
 
     public GuestUser getUserById(Long userId) {
-        Span span = tracer.buildSpan("getUserById").start();
-        try {
             if (guestUserRepository.findGuestUserById(userId) == null) {
                 throw new NoSuchElementException("No such user!");
             }
             return guestUserRepository.findGuestUserById(userId);
-        } finally {
-            span.finish();
-        }
     }
 
     public GuestUser saveUser(GuestUser user) {
-        Span span = tracer.buildSpan("saveUser").start();
-        try {
             if (guestUserRepository.existsGuestUserByUserName(user.getUserName())) {
                 throw new IllegalArgumentException("Username '" + user.getUserName() + "' is already in use");
             }
@@ -46,14 +35,9 @@ public class GuestUserService {
                 throw new IllegalArgumentException("Phone number '" + user.getPhoneNumber() + "' is already in use");
             }
             return guestUserRepository.save(user);
-        } finally {
-            span.finish();
-        }
     }
 
     public GuestUser updateUser(GuestUser user, Long userId) {
-        Span span = tracer.buildSpan("updateUser").start();
-        try {
             GuestUser userToUpdate = guestUserRepository.findById(userId)
                     .orElseThrow(() -> new NoSuchElementException("AdminUser not found with ID: " + userId));
 
@@ -66,9 +50,6 @@ public class GuestUserService {
             updateIfNotEmpty(userToUpdate::setPremiumUser, user.isPremiumUser());
 
             return guestUserRepository.save(userToUpdate);
-        } finally {
-            span.finish();
-        }
     }
 
     private <T> void updateIfNotEmpty(Consumer<T> setter, T value) {
@@ -76,12 +57,7 @@ public class GuestUserService {
     }
 
     public void deleteUserById(Long userId) {
-        Span span = tracer.buildSpan("deleteUserById").start();
-        try {
             guestUserRepository.deleteById(userId);
             System.out.println("Deleted successfully");
-        } finally {
-            span.finish();
-        }
     }
 }

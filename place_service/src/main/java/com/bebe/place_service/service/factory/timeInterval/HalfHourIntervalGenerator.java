@@ -4,8 +4,6 @@ package com.bebe.place_service.service.factory.timeInterval;
 import com.bebe.place_service.dto.TimeIntervalForDayDTO;
 import com.bebe.place_service.model.PlaceTable;
 import com.bebe.place_service.model.TimeInterval;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
@@ -17,16 +15,9 @@ import java.util.Set;
 @Component
 public class HalfHourIntervalGenerator implements TimeIntervalGenerator {
     private static final int HALF_HOUR_IN_MINUTES = 30;
-    private final Tracer tracer;
-
-    public HalfHourIntervalGenerator(Tracer tracer) {
-        this.tracer = tracer;
-    }
 
     @Override
     public Set<TimeInterval> generateTimeInterval(Set<TimeIntervalForDayDTO> timeIntervalsForWeek, PlaceTable table) {
-        Span span = tracer.buildSpan("generateTimeInterval").start();
-        try {
             Set<TimeInterval> newTimeIntervals = new HashSet<>();
 
             LocalDate currentDate = LocalDate.now();
@@ -49,9 +40,6 @@ public class HalfHourIntervalGenerator implements TimeIntervalGenerator {
             }
 
             return newTimeIntervals;
-        } finally {
-            span.finish();
-        }
     }
 
     private TimeInterval setFieldsOfTimeInterval(DayOfWeek day, LocalDate date, LocalTime startTime, PlaceTable table) {

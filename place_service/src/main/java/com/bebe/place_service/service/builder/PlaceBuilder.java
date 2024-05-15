@@ -10,15 +10,8 @@ import java.util.HashSet;
 
 @Component
 public class PlaceBuilder {
-    private final Tracer tracer;
-
-    public PlaceBuilder(Tracer tracer) {
-        this.tracer = tracer;
-    }
 
     public Place placeBuilder(NewPlaceDTO newPlaceDTO) {
-        Span span = tracer.buildSpan("placeBuilder").start();
-        try {
             System.out.println(newPlaceDTO);
             return Place.builder()
                     .name(newPlaceDTO.name())
@@ -30,8 +23,5 @@ public class PlaceBuilder {
                     .tables(new HashSet<>())
                     .adminUserId(newPlaceDTO.ownerId())
                     .build();
-        } finally {
-            span.finish();
-        }
     }
 }

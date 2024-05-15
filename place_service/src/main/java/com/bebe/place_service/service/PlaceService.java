@@ -12,8 +12,6 @@ import com.bebe.place_service.repository.TimeIntervalRepository;
 import com.bebe.place_service.service.builder.PlaceBuilder;
 import com.bebe.place_service.service.factory.placeTable.PlaceTableGeneratorImpl;
 import com.bebe.place_service.service.factory.timeInterval.HalfHourIntervalGenerator;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,41 +32,27 @@ public class PlaceService {
     private final HalfHourIntervalGenerator timeIntervalGenerator;
     private final PlaceTableGeneratorImpl placeTableGenerator;
     private final PlaceBuilder placeBuilder;
-    private final Tracer tracer;
 
     @Autowired
-    public PlaceService(PlaceRepository placeRepository, PlaceTableRepository placeTableRepository, TimeIntervalRepository timeIntervalRepository, HalfHourIntervalGenerator timeIntervalGenerator, PlaceTableGeneratorImpl placeTableGenerator, PlaceBuilder placeBuilder, Tracer tracer) {
+    public PlaceService(PlaceRepository placeRepository, PlaceTableRepository placeTableRepository, TimeIntervalRepository timeIntervalRepository, HalfHourIntervalGenerator timeIntervalGenerator, PlaceTableGeneratorImpl placeTableGenerator, PlaceBuilder placeBuilder) {
         this.placeRepository = placeRepository;
         this.placeTableRepository = placeTableRepository;
         this.timeIntervalRepository = timeIntervalRepository;
         this.timeIntervalGenerator = timeIntervalGenerator;
         this.placeTableGenerator = placeTableGenerator;
         this.placeBuilder = placeBuilder;
-        this.tracer = tracer;
     }
 
     public Set<Place> getAllPlaces() {
-        Span span = tracer.buildSpan("getAllPlaces").start();
-        try {
             return new HashSet<>(placeRepository.findAll());
-        } finally {
-            span.finish();
-        }
     }
 
     public Place getPlaceById(Long placeId) {
-        Span span = tracer.buildSpan("getPlaceById").start();
-        try {
             return placeRepository.findById(placeId)
                     .orElseThrow(() -> new NoSuchElementException("The place doesn't exist!"));
-        } finally {
-            span.finish();
-        }
     }
 
     public Place addPlace(NewPlaceDTO placeDto) {
-        Span span = tracer.buildSpan("addPlace").start();
-        try {
             Place newPlace = placeBuilder.placeBuilder(placeDto);
             newPlace = placeRepository.save(newPlace);
 
@@ -80,14 +64,9 @@ public class PlaceService {
             newPlace.setTables(tables);
 
             return placeRepository.save(newPlace);
-        } finally {
-            span.finish();
-        }
     }
 
     private Set<TimeInterval> createTimeIntervals(NewPlaceDTO placeDto, Set<PlaceTable> tables) {
-        Span span = tracer.buildSpan("createTimeIntervals").start();
-        try {
             Set<TimeIntervalForDayDTO> openHoursPerDays = placeDto.timeIntervalForWeek().timeIntervalForDayDTOSet();
             Set<TimeInterval> timeIntervals = new HashSet<>();
 
@@ -97,9 +76,6 @@ public class PlaceService {
 
             setTimeIntervalsForTables(tables, timeIntervals);
             return timeIntervals;
-        } finally {
-            span.finish();
-        }
     }
 
     private void setTimeIntervalsForTables(Set<PlaceTable> tables, Set<TimeInterval> timeIntervals) {
@@ -109,8 +85,6 @@ public class PlaceService {
     }
 
     public Place updatePlace(PlaceDTO place, Long placeId) {
-        Span span = tracer.buildSpan("updatePlace").start();
-        try {
             Place placeToUpdate = placeRepository.findById(placeId)
                     .orElseThrow(() -> new NoSuchElementException("Place not found with ID: " + placeId));
 
@@ -127,24 +101,14 @@ public class PlaceService {
             updateIfNotEmpty(placeToUpdate::setReservationIds, place.reservationIds());
 
             return placeRepository.save(placeToUpdate);
-        } finally {
-            span.finish();
-        }
     }
 
     public void deletePlaceById(Long placeId) {
-        Span span = tracer.buildSpan("deletePlaceById").start();
-        try {
             System.out.println("Deleted successfully");
             placeRepository.deleteById(placeId);
-        } finally {
-            span.finish();
-        }
     }
 
     public void reserveTimeIntervals(Long placeId, Long tableId, Set<Long> reservedTimeIntervalIds) {
-        Span span = tracer.buildSpan("reserveTimeIntervals").start();
-        try {
             Place place = placeRepository.findById(placeId)
                     .orElseThrow(() -> new NoSuchElementException("Place not found with ID: " + placeId));
 
@@ -160,9 +124,6 @@ public class PlaceService {
             });
 
             placeRepository.save(place);
-        } finally {
-            span.finish();
-        }
     }
 
     private <T> void updateIfNotEmpty(Consumer<T> setter, T value) {
