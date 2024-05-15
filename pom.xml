@@ -18,6 +18,10 @@
     <modules>
         <module>eureka_server</module>
         <module>place_service</module>
+        <module>admin_user_service</module>
+        <module>api_gateway</module>
+        <module>guest_user_service</module>
+        <module>reservation_service</module>
     </modules>
 
     <properties>
