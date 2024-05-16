@@ -2,8 +2,6 @@ package com.bebe.place_service.service.builder;
 
 import com.bebe.place_service.dto.NewPlaceDTO;
 import com.bebe.place_service.model.Place;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
