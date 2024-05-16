@@ -198,14 +198,17 @@ services:
     volumes:
       - reservation_service_db_data:/var/lib/mysql
 
-  custom_jenkins:
-    container_name: master-jenkins
+  jenkins-master:
+    container_name: jenkins-master
     build:
       context: ./
       dockerfile: custom-jenkins.Dockerfile
-    image: custom_multi_jenkins
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://master-jenkins:8082/health"]
+      test: ["CMD", "curl", "-f", "-o", "/dev/null", "-w", "%{http_code}", "-u", "admin:6ccdb6f0237c46d5acf52c5ad00b4d23", "http://jenkins-master:8080"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
     ports:
       - "8082:8080"
     volumes:
@@ -219,7 +222,9 @@ services:
 
   sonarqube:
     container_name: sonarqube
-    image: sonarqube:lts-community
+    build:
+      context: ./
+      dockerfile: custom-sonarqube.Dockerfile
     environment:
       SONAR_JDBC_URL: ${SONAR_CONNECTION_STRING}/${PSQL_DB_NAME}
       SONAR_JDBC_USERNAME: ${SONAR_USERNAME}
@@ -227,9 +232,10 @@ services:
     ports:
       - "9000:9000"
     depends_on:
-      - sonarqube-db
+      sonarqube-db:
+        condition: service_healthy
     healthcheck:
-      test: CMD wget -qO- http://sonarqube:9000/api/system/status | grep -q -e '"status":"UP"' -e '"status":"DB_MIGRATION_NEEDED"' -e '"status":"DB_MIGRATION_RUNNING"' || exit 1
+      test: "wget -qO- http://sonarqube:9000/api/system/status | grep -q -e UP -e DB_MIGRATION_NEEDED -e DB_MIGRATION_RUNNING || exit 1"
       interval: 30s
       timeout: 10s
       retries: 3
