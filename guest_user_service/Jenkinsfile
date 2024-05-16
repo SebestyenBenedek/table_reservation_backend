@@ -1,0 +1,235 @@
+pipeline {
+    agent any
+
+    triggers {
+        changed(branchFilter: '.*')
+    }
+
+    tools {
+        maven 'maven_3.6.3'
+        jdk 'jdk_8'
+    }
+
+    environment {
+        VERSION = ''
+        DOCKER_IMAGE = 'guest_user_service'
+        DOCKER_REGISTRY = 'bebe97'
+        DOCKER = "${DOCKER_REGISTRY}/${DOCKER_IMAGE}"
+    }
+
+    stages {
+        //Code Quality and Testing stages
+        stage('Checkout') {
+            steps {
+                checkout scm
+                checkoutRepo('https://github.com/SebestyenBenedek/table_reservation_backend.git', 'development', 'github_credentials')
+            }
+        }
+
+        stage('Test and Code Quality') {
+            steps {
+                checkQualityAndTestCode()
+            }
+        }
+
+        stage("Quality Gate") {
+            steps {
+                timeOut(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // Stage 2: Merge and Deployment
+        stage('Merge Development to Feature Branch and Test') {
+            when {
+                expression { env.CHANGE_ID != null }
+            }
+            steps {
+                mergeAndTest(env.BRANCH_NAME)
+            }
+        }
+
+        stage('Manual Merge Approval') {
+            when {
+                expression { env.CHANGE_ID != null }
+            }
+            steps {
+                script {
+                    def userInput = input(id: 'userInput', message: 'Please review and approve the merge:', parameters: [
+                        [$class: 'BooleanParameterDefinition', defaultValue: false, description: '', name: 'approve']
+                    ])
+                    if (userInput == false) {
+                        error('Merge not approved. Aborting.')
+                    }
+                }
+            }
+        }
+
+        stage('Merge Feature Branch to Development') {
+            when {
+                expression { env.CHANGE_ID != null }
+            }
+            steps {
+                mergeAndTest('development')
+            }
+        }
+
+        stage('Build and Versioning') {
+            when {
+                expression { env.CHANGE_ID != null }
+            }
+            steps {
+                script {
+                    try {
+                        dir('guest_user_service') {
+                            incrementVersion()
+                            sh "docker build -t ${env.DOCKER}:${env.VERSION}-${env.BUILD_NUMBER} -f guest_user_service.Dockerfile ."
+                            gitConfigAndVersioning(env.VERSION)
+                        }
+                    } catch (Exception e) {
+                        handleFailure("Build and Versioning", e)
+                    }
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                pushImageToDockerHub()
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    sh 'docker system prune -af'
+                }
+            }
+        }
+    }
+}
+
+post {
+    failure {
+        emailext (
+            subject: "Pipeline Failed: ${currentBuild.fullDisplayName}",
+            body: """
+                The pipeline ${currentBuild.fullDisplayName} has failed.
+                Build Status: ${BUILD_STATUS}
+                Number of Tests: ${TEST_RESULTS}
+                Version Built: ${VERSION}
+                Error Message: ${ERROR_MESSAGE}
+            """,
+            recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+        )
+    }
+    success {
+        emailext (
+            subject: "Pipeline Succeeded: ${currentBuild.fullDisplayName}",
+            body: """
+                The pipeline ${currentBuild.fullDisplayName} has succeeded.
+                Build Status: ${BUILD_STATUS}
+                Number of Tests: ${TEST_RESULTS}
+                Version Built: ${VERSION}
+            """,
+            recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+        )
+    }
+}
+
+
+
+def checkoutRepo(repoUrl, branch, credentialsId) {
+    checkout([$class: 'GitSCM', branches: [[name: "*/${branch}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: repoUrl, credentialsId: credentialsId]]])
+}
+
+def handleFailure(String stageName, Exception e) {
+    sh "echo \"Failed in stage: ${stageName}. Reason: ${e.message}\""
+    currentBuild.result = 'FAILURE'
+}
+
+def checkQualityAndTestCode() {
+    script {
+        try {
+            dir('guest_user_service') {
+                sh 'mvn clean test'
+                sh 'echo "Tests ran successfully"'
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvnw clean sonar:sonar'
+                }
+            }
+        } catch (Exception e) {
+            handleFailure("Code quality and testing", e)
+        }
+    }
+}
+
+def mergeAndTest(String targetBranch) {
+    script {
+        try {
+            sh """
+                git checkout development
+                git pull origin development
+                git fetch origin ${targetBranch}
+                git checkout ${targetBranch}
+                git merge development
+            """
+            dir('guest_user_service') {
+                sh """
+                    mvn test
+                    echo "Tests ran successfully"
+                """
+            }
+        } catch (Exception e) {
+            handleFailure("Merge and Test", e)
+        }                
+    }
+}
+
+def incrementVersion() {
+    try {
+        sh 'chmod +x ./increment_version.sh'
+        env.VERSION = sh(script: './increment_version.sh', returnStdout: true).trim()
+    } catch (Exception e) {
+        handleFailure("Increment version", e)
+    }
+}
+
+def gitConfigAndVersioning(String newVersion) {
+    sh """
+        git config user.name 'SebestyenBenedek'
+        git config user.email 'sebi.bebe@gmail.com'
+        cd guest_user_service
+        git add version.txt
+    """
+    def gitStatus = sh(script: 'git status --porcelain', returnStdout: true).trim()
+
+    if (gitStatus != "") {
+        sh "git commit -m 'Update version to ${newVersion}'"
+    } else {
+        echo "No changes to commit"
+    }
+
+    sh 'git pull --no-rebase origin feature/add_docker_and_jenkins_to_guest_user_service'
+
+    withCredentials([usernamePassword(credentialsId: 'github_credentials_with_token', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+        sh "git push https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/SebestyenBenedek/table_reservation_backend.git development"
+    }
+}
+
+def pushImageToDockerHub() {
+    script {
+        withCredentials([usernamePassword(credentialsId: 'docker_hub_credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+            try {
+                sh """
+                    docker login --username ${DOCKER_USERNAME} --password-stdin https://registry.hub.docker.com <<< ${DOCKER_PASSWORD}
+                    docker push "${DOCKER}:${VERSION}"
+                """
+            } catch (Exception e) {
+                sh 'echo "Failed to push Docker image to Dockerhub: ${e.message}"'
+                currentBuild.result = 'FAILURE'
+            }
+        }
+    }
+}
