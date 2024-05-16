@@ -1,9 +1,7 @@
 FROM sonarqube:10.5.0-community
 
-# Set SonarQube home directory
 ENV SONARQUBE_HOME /opt/sonarqube
 
-# Switch to root user to change permissions
 USER root
 
 # Create the plugins directory if it doesn't exist and set appropriate permissions
@@ -19,12 +17,6 @@ RUN wget "http://downloads.sonarsource.com/plugins/org/codehaus/sonar-plugins/so
     && mv *.jar $SONARQUBE_HOME/extensions/plugins/ \
     && ls -lah $SONARQUBE_HOME/extensions/plugins/
 
-# Create the sonar user
-#RUN useradd -m sonar
+RUN groupadd docker && usermod -a -G docker sonarqube
 
-# Create the docker group and add SonarQube user to it
-#RUN groupadd docker && usermod -a -G docker sonar
-
-# Switch back to SonarQube user
-#USER sonarqube
-
+USER sonarqube
