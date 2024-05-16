@@ -204,7 +204,7 @@ services:
       context: ./
       dockerfile: custom-jenkins.Dockerfile
     healthcheck:
-      test: ["CMD", "curl", "-f", "-o", "/dev/null", "-w", "%{http_code}", "-u", "admin:6ccdb6f0237c46d5acf52c5ad00b4d23", "http://jenkins-master:8080"]
+      test: ["CMD", "sh", "-c", "curl -f -o /dev/null -w \"%{http_code}\" -u admin:`cat /var/jenkins_home/secrets/initialAdminPassword` http://jenkins-master:8080"]
       interval: 10s
       timeout: 10s
       retries: 3
