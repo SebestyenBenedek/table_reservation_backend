@@ -9,6 +9,8 @@ RUN mvn clean package -DskipTests
 
 FROM openjdk:17-jdk-alpine3.13
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 EXPOSE 8761
