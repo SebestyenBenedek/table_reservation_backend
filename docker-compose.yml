@@ -1,12 +1,16 @@
 x-mysql-service: &mysql-service
   image: mysql:8.3.0
+  healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USERNAME}", "--password=${MYSQL_PASSWORD}"]
   networks:
     - backend
 
 x-spring-service: &spring-service
   depends_on:
-    - eureka-server
-    - api-gateway
+    eureka-server:
+      condition: service_healthy
+    api-gateway:
+      condition: service_healthy
   networks:
     - backend
   deploy:
@@ -27,10 +31,11 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/eureka/health"]
-      interval: 30s
+      test: "curl --fail --silent localhost:8761/actuator/health/readiness | grep UP || exit 1"
+      interval: 5s
       timeout: 10s
       retries: 3
+      start_period: 2s
 
   api-gateway:
     container_name: api-gateway
@@ -39,15 +44,14 @@ services:
       dockerfile: api_gateway.Dockerfile
     ports:
       - "8081:8081"
-    depends_on:
-      - eureka-server
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 30s
+      test: "curl --fail --silent localhost:8081/actuator/health/readiness | grep UP || exit 1"
+      interval: 5s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 2s
     deploy:
       resources:
         limits:
@@ -67,12 +71,14 @@ services:
     ports:
       - "8085:8085"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: "curl --fail --silent localhost:8085/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
     depends_on:
-      - admin-user-db
+      admin-user-db:
+        condition: service_healthy
 
   admin-user-db:
     container_name: admin-user-db
@@ -82,8 +88,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    healthcheck:
-      test: ["CMD", "mysql_isready", "-U", "${MYSQL_USERNAME}", "-d", "adminUserDB"]
     ports:
       - "3316:3306"
     volumes:
@@ -102,12 +106,14 @@ services:
     ports:
       - "8086:8086"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: "curl --fail --silent localhost:8086/actuator/health/readiness | grep UP || exit 1"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
     depends_on:
-      - guest-user-db
+      guest-user-db:
+        condition: service_healthy
 
   guest-user-db:
     container_name: guest-user-db
@@ -117,8 +123,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    healthcheck:
-      test: ["CMD", "mysql_isready", "-U", "${MYSQL_USERNAME}", "-d", "guestUserDB"]
     ports:
       - "3326:3306"
     volumes:
@@ -137,12 +141,14 @@ services:
     ports:
       - "8087:8087"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: "curl --fail --silent localhost:8087/actuator/health/readiness | grep UP || exit 1"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
     depends_on:
-      - place-db
+      place-db:
+        condition: service_healthy
 
   place-db:
     container_name: place-db
@@ -152,8 +158,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    healthcheck:
-      test: ["CMD", "mysql_isready", "-U", "${MYSQL_USERNAME}", "-d", "placeDB"]
     ports:
       - "3336:3306"
     volumes:
@@ -172,12 +176,14 @@ services:
     ports:
       - "8088:8088"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: "curl --fail --silent localhost:8088/actuator/health/readiness | grep UP || exit 1"
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 2s
     depends_on:
-      - reservation-db
+      reservation-db:
+        condition: service_healthy
 
   reservation-db:
     container_name: reservation-db
@@ -187,18 +193,85 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    healthcheck:
-      test: ["CMD", "mysql_isready", "-U", "${MYSQL_USERNAME}", "-d", "reservationDB"]
     ports:
       - "3346:3306"
     volumes:
       - reservation_service_db_data:/var/lib/mysql
+
+  custom_jenkins:
+    container_name: master-jenkins
+    build:
+      context: ./
+      dockerfile: custom-jenkins.Dockerfile
+    image: custom_multi_jenkins
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://master-jenkins:8082/health"]
+    ports:
+      - "8082:8080"
+    volumes:
+      - jenkins_home_2:/var/jenkins_home
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:lts-community
+    environment:
+      SONAR_JDBC_URL: ${SONAR_CONNECTION_STRING}/${PSQL_DB_NAME}
+      SONAR_JDBC_USERNAME: ${SONAR_USERNAME}
+      SONAR_JDBC_PASSWORD: ${SONAR_PASSWORD}
+    ports:
+      - "9000:9000"
+    depends_on:
+      - sonarqube-db
+    healthcheck:
+      test: CMD wget -qO- http://sonarqube:9000/api/system/status | grep -q -e '"status":"UP"' -e '"status":"DB_MIGRATION_NEEDED"' -e '"status":"DB_MIGRATION_RUNNING"' || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_conf:/opt/sonarqube/conf
+    networks:
+      - backend
+    restart: unless-stopped
+
+  sonarqube-db:
+    container_name: sonarqube-db
+    image: postgres:12
+    environment:
+      POSTGRES_DB: ${PSQL_DB_NAME}
+      POSTGRES_USER: ${SONAR_USERNAME}
+      POSTGRES_PASSWORD: ${SONAR_PASSWORD}
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${SONAR_USERNAME}", "-d", "${PSQL_DB_NAME}"]
+    expose:
+      - "5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
 
 volumes:
   admin_user_service_db_data:
   guest_user_service_db_data:
   place_service_db_data:
   reservation_service_db_data:
+  jenkins_home_2:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_conf:
+  postgresql_data:
 
 networks:
   backend:
