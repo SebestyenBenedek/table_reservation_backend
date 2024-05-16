@@ -73,3 +73,4 @@ pipeline-stage-tags-metadata
 pipeline-stage-view
 pipeline-utility-steps
 prometheus
+role-strategy
