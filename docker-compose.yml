@@ -2,6 +2,10 @@ x-mysql-service: &mysql-service
   image: mysql:8.3.0
   healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USERNAME}", "--password=${MYSQL_PASSWORD}"]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+      start_period: 2s
   networks:
     - backend
 
@@ -33,9 +37,9 @@ services:
     healthcheck:
       test: "curl --fail --silent localhost:8761/actuator/health/readiness | grep UP || exit 1"
       interval: 5s
-      timeout: 10s
-      retries: 3
-      start_period: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   api-gateway:
     container_name: api-gateway
@@ -49,9 +53,9 @@ services:
     healthcheck:
       test: "curl --fail --silent localhost:8081/actuator/health/readiness | grep UP || exit 1"
       interval: 5s
-      timeout: 10s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 5s
     deploy:
       resources:
         limits:
@@ -72,10 +76,10 @@ services:
       - "8085:8085"
     healthcheck:
       test: "curl --fail --silent localhost:8085/actuator/health/readiness | grep UP || exit 1"
-      interval: 10s
-      timeout: 10s
+      interval: 2s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 10s
     depends_on:
       admin-user-db:
         condition: service_healthy
@@ -107,10 +111,10 @@ services:
       - "8086:8086"
     healthcheck:
       test: "curl --fail --silent localhost:8086/actuator/health/readiness | grep UP || exit 1"
-      interval: 5s
-      timeout: 10s
+      interval: 2s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 10s
     depends_on:
       guest-user-db:
         condition: service_healthy
@@ -142,10 +146,10 @@ services:
       - "8087:8087"
     healthcheck:
       test: "curl --fail --silent localhost:8087/actuator/health/readiness | grep UP || exit 1"
-      interval: 5s
-      timeout: 10s
+      interval: 2s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 10s
     depends_on:
       place-db:
         condition: service_healthy
@@ -177,10 +181,10 @@ services:
       - "8088:8088"
     healthcheck:
       test: "curl --fail --silent localhost:8088/actuator/health/readiness | grep UP || exit 1"
-      interval: 5s
-      timeout: 10s
+      interval: 2s
+      timeout: 5s
       retries: 5
-      start_period: 2s
+      start_period: 10s
     depends_on:
       reservation-db:
         condition: service_healthy
@@ -205,10 +209,10 @@ services:
       dockerfile: custom-jenkins.Dockerfile
     healthcheck:
       test: ["CMD", "sh", "-c", "curl -f -o /dev/null -w \"%{http_code}\" -u admin:`cat /var/jenkins_home/secrets/initialAdminPassword` http://jenkins-master:8080"]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     ports:
       - "8082:8080"
     volumes:
@@ -236,9 +240,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: "wget -qO- http://sonarqube:9000/api/system/status | grep -q -e UP -e DB_MIGRATION_NEEDED -e DB_MIGRATION_RUNNING || exit 1"
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 2s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
@@ -259,6 +264,10 @@ services:
       - "5433:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${SONAR_USERNAME}", "-d", "${PSQL_DB_NAME}"]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+      start_period: 2s
     expose:
       - "5432"
     volumes:
