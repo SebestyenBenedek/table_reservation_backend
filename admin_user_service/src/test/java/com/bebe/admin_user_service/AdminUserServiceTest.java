@@ -27,15 +27,15 @@ public class AdminUserServiceTest {
     public void testGetAdminById() {
         // Arrange
         Long adminId = 1L;
-        AdminUser adminUser = new AdminUser();
-        when(adminUserRepository.findAdminUserById(adminId)).thenReturn(adminUser);
+        Optional <AdminUser> adminUser = Optional.ofNullable(new AdminUser());
+        when(adminUserRepository.findById(adminId)).thenReturn(adminUser);
 
         // Act
         AdminUser result = adminUserService.getAdminById(adminId);
 
         // Assert
         assertEquals(adminUser, result);
-        verify(adminUserRepository, times(1)).findAdminUserById(adminId);
+        verify(adminUserRepository, times(1)).findById(adminId);
     }
 
     @Test

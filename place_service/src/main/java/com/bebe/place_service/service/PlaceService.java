@@ -49,7 +49,7 @@ public class PlaceService {
 
     public Place getPlaceById(Long placeId) {
             return placeRepository.findById(placeId)
-                    .orElseThrow(() -> new NoSuchElementException("The place doesn't exist!"));
+                    .orElseThrow(() -> new NoSuchElementException("Place not found with ID: " + placeId));
     }
 
     public Place addPlace(NewPlaceDTO placeDto) {

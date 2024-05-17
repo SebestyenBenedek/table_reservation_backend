@@ -18,11 +18,8 @@ public class AdminUserService {
     }
 
     public AdminUser getAdminById(Long adminId) {
-            AdminUser adminUser = adminUserRepository.findAdminUserById(adminId);
-            if (adminUser == null) {
-                throw new NoSuchElementException("No such admin!");
-            }
-            return adminUser;
+            return adminUserRepository.findById(adminId)
+                .orElseThrow(() -> new NoSuchElementException("AdminUser not found with ID: " + adminId));
     }
 
     public AdminUser saveAdmin(AdminUser admin) {

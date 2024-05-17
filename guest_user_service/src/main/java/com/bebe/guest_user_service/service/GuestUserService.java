@@ -18,10 +18,8 @@ public class GuestUserService {
     }
 
     public GuestUser getUserById(Long userId) {
-            if (guestUserRepository.findGuestUserById(userId) == null) {
-                throw new NoSuchElementException("No such user!");
-            }
-            return guestUserRepository.findGuestUserById(userId);
+        return guestUserRepository.findById(userId)
+            .orElseThrow(() -> new NoSuchElementException("Guest User not found with ID: " + userId));
     }
 
     public GuestUser saveUser(GuestUser user) {
@@ -39,7 +37,7 @@ public class GuestUserService {
 
     public GuestUser updateUser(GuestUser user, Long userId) {
             GuestUser userToUpdate = guestUserRepository.findById(userId)
-                    .orElseThrow(() -> new NoSuchElementException("AdminUser not found with ID: " + userId));
+                    .orElseThrow(() -> new NoSuchElementException("Guest User not found with ID: " + userId));
 
             updateIfNotEmpty(userToUpdate::setUserName, user.getUserName());
             updateIfNotEmpty(userToUpdate::setPassword, user.getPassword());

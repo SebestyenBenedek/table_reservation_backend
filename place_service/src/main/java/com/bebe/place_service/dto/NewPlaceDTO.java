@@ -1,7 +1,6 @@
 package com.bebe.place_service.dto;
 
 import com.bebe.place_service.model.Characteristic;
-import lombok.Getter;
 
 import java.util.List;
 import java.util.Set;

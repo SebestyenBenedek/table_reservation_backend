@@ -8,7 +8,6 @@ import java.util.Set;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-    Reservation findReservationById(Long reservationId);
     Set<Reservation> findAllByPlaceId(Long placeId);
     Set<Reservation> findAllByGuestUserId(Long userId);
 }

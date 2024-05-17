@@ -161,10 +161,8 @@ public class ReservationService {
     }
 
     public Reservation getReservationById(Long reservationId) {
-            if (reservationRepository.findReservationById(reservationId) == null) {
-                throw new NoSuchElementException("The place doesn't exist!");
-            }
-            return reservationRepository.findReservationById(reservationId);
+        return reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new NoSuchElementException("Reservation not found with ID: " + reservationId));
     }
 
     public Set<Reservation> getAllReservationsByPlace(Long placeId) {
@@ -177,7 +175,7 @@ public class ReservationService {
 
     public void deleteReservationById(Long reservationId) {
             Reservation reservation = reservationRepository.findById(reservationId)
-                    .orElseThrow(() -> new RuntimeException("Reservation not found"));
+                    .orElseThrow(() -> new RuntimeException("Reservation not found with ID: " + reservationId));
 
             Set<Long> reservedTimeIntervalIds = reservation.getTimeIntervalIds();
             Place place = getPlaceFromPlaceService(reservation.getPlaceId());
