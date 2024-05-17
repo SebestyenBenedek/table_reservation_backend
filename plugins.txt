@@ -11,6 +11,7 @@ bumblebee
 caffeine-api
 checks-api
 cloud-stats
+cloudbees-disk-usage-simple
 commons-lang3-api
 commons-text-api
 credentials-binding
