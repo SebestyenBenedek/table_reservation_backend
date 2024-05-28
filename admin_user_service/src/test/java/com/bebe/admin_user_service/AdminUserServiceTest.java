@@ -8,13 +8,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@ActiveProfiles("dev")
 public class AdminUserServiceTest {
 
     @Mock
@@ -34,7 +39,8 @@ public class AdminUserServiceTest {
         AdminUser result = adminUserService.getAdminById(adminId);
 
         // Assert
-        assertEquals(adminUser, result);
+        assertTrue(adminUser.isPresent());
+        assertEquals(adminUser.get(), result);
         verify(adminUserRepository, times(1)).findById(adminId);
     }
 
@@ -42,6 +48,11 @@ public class AdminUserServiceTest {
     public void testSaveAdmin() {
         // Arrange
         AdminUser admin = new AdminUser();
+        admin.setId(1L);
+        admin.setUserName("username");
+        admin.setPassword("password");
+        admin.setEmail("test@email.com");
+        admin.setPhoneNumber("+36205558989");
         when(adminUserRepository.existsAdminUserByUserName(admin.getUserName())).thenReturn(false);
         when(adminUserRepository.existsAdminUserByEmail(admin.getEmail())).thenReturn(false);
         when(adminUserRepository.existsAdminUserByPhoneNumber(admin.getPhoneNumber())).thenReturn(false);
@@ -60,7 +71,17 @@ public class AdminUserServiceTest {
         // Arrange
         Long adminId = 1L;
         AdminUser admin = new AdminUser();
+        admin.setId(1L);
+        admin.setUserName("username");
+        admin.setPassword("password");
+        admin.setEmail("test@email.com");
+        admin.setPhoneNumber("+36205558989");
         AdminUser existingAdmin = new AdminUser();
+        admin.setId(2L);
+        admin.setUserName("username2");
+        admin.setPassword("password2");
+        admin.setEmail("test@email.com2");
+        admin.setPhoneNumber("+36205558988");
         when(adminUserRepository.findById(adminId)).thenReturn(Optional.of(existingAdmin));
         when(adminUserRepository.save(existingAdmin)).thenReturn(existingAdmin);
 
